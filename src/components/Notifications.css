@@ -1,0 +1,144 @@
+
+.notifications-section {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 20px 16px 100px;
+  box-sizing: border-box;
+  color: #243047;
+}
+
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.notifications-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+}
+
+.notifications-header p {
+  margin: 0;
+  color: #687386;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.notifications-count {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border-radius: 20px;
+  background: #e8eefc;
+  color: #294b91;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notification-item {
+  padding: 16px;
+  border: 1px solid #e0e5ed;
+  border-radius: 12px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.notification-item.is-unread {
+  border-left: 4px solid #3158a8;
+  background: #f7f9ff;
+}
+
+.notification-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.notification-item-top > strong {
+  font-size: 0.95rem;
+}
+
+.notification-new {
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #e8eefc;
+  color: #294b91;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.notification-message {
+  margin: 12px 0 8px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.notification-date {
+  color: #687386;
+  font-size: 0.8rem;
+}
+
+.notification-read-button {
+  display: block;
+  margin: 12px 0 0 auto;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #edf1f7;
+  color: #35435a;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notification-read-button:hover {
+  background: #dfe6f1;
+}
+
+.notifications-empty {
+  padding: 30px 16px;
+  border: 1px dashed #cfd6e2;
+  border-radius: 12px;
+  text-align: center;
+  color: #687386;
+}
+
+.notifications-empty span {
+  font-size: 2rem;
+}
+
+.notifications-empty p {
+  margin: 10px 0 6px;
+  color: #35435a;
+  font-weight: 600;
+}
+
+.notifications-empty small {
+  line-height: 1.5;
+}
+
+.notifications-error {
+  color: #b4232c;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 560px) {
+  .notifications-section {
+    padding: 16px 12px 100px;
+  }
+
+  .notifications-header h2 {
+    font-size: 1.3rem;
+  }
+}

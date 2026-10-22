@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import Agenda from "./components/agenda";
+import Notifications from "./components/Notifications.jsx";
+import Chat from "./pages/Chat.jsx";
+
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
 import BalanceList from "./components/balanceList";
@@ -20,6 +24,7 @@ import {
   getDocs,
   updateDoc,
   writeBatch,
+  orderBy,
 } from "firebase/firestore";
 import "./App.css";
 
@@ -32,6 +37,12 @@ function App() {
   const [groupName, setGroupName] = useState(() => {
     return localStorage.getItem("groupName") || "";
   });
+
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [activePage, setActivePage] = useState("home");
+  const [unreadChat, setUnreadChat] = useState(0);
+  
+
   const [loading, setLoading] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [user, setUser] = useState(null);
@@ -542,6 +553,72 @@ useEffect(() => {
     });
   };
 
+  
+useEffect(() => {
+  if (!groupId || !user?.uid) {
+    setUnreadChat(0);
+    return;
+  }
+
+  const messagesRef = collection(db, "groups", groupId, "messages");
+  const profileRef = doc(
+    db,
+    "groups",
+    groupId,
+    "chatProfiles",
+    user.uid
+  );
+
+  let messages = [];
+  let lastReadMillis = 0;
+
+  const updateUnreadCount = () => {
+    if (activePage === "chat") {
+      setUnreadChat(0);
+      return;
+    }
+
+    const unread = messages.filter((item) => {
+      if (item.senderUid === user.uid) return false;
+
+      const createdAt = item.createdAt?.toMillis?.();
+      return createdAt && createdAt > lastReadMillis;
+    }).length;
+
+    setUnreadChat(unread);
+  };
+
+  const unsubscribeMessages = onSnapshot(
+    query(messagesRef, orderBy("createdAt", "asc")),
+    (snapshot) => {
+      messages = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      updateUnreadCount();
+    },
+    (error) => console.error("Error al contar mensajes:", error)
+  );
+
+  const unsubscribeProfile = onSnapshot(
+    profileRef,
+    (snapshot) => {
+      lastReadMillis =
+        snapshot.data()?.lastReadAt?.toMillis?.() || 0;
+
+      updateUnreadCount();
+    },
+    (error) => console.error("Error al leer el perfil del chat:", error)
+  );
+
+  return () => {
+    unsubscribeMessages();
+    unsubscribeProfile();
+  };
+}, [groupId, user?.uid, activePage]);
+
+
   //Bienvenida
   if (!started && !groupId) {
     return (
@@ -575,8 +652,29 @@ useEffect(() => {
     );
   }
 
+  
+if (activePage === "chat") {
   return (
+    <div className="app chat-screen">
+      <button
+        type="button"
+        className="chat-back-button"
+        onClick={() => setActivePage("home")}
+      >
+        <i className="fa-solid fa-arrow-left"></i>
+        {" "}Volver
+      </button>
+
+      <Chat groupId={groupId} user={user} />
+    </div>
+  );
+}
+
+
+  return (
+    
     <div className="app">
+    
       <div style={{ position: "absolute", top: 10, right: 10 }}>
         {/* <div style={{ marginBottom: "10px" }}>
   <button onClick={() => changeLang("es")}>ES</button>
@@ -586,6 +684,15 @@ useEffect(() => {
   {/* <LanguageSelector /> */}
 </div>
       <p>{t("slogan")}</p>
+      <div id="section-agenda">
+  <Agenda groupId={groupId} user={user} />
+</div>
+
+<div id="section-notifications">
+  <Notifications groupId={groupId} user={user} onUnreadCountChange={setUnreadNotifications}/>
+</div>
+
+
       <img src="logo.png" alt="Cuentas Claras" className="Create" />
 
    
@@ -654,6 +761,54 @@ useEffect(() => {
             <i className="fa-solid fa-calculator"></i>
             <small>{t("balance")}</small>
           </div>
+
+          
+<div
+  className="bottom-icon"
+  onClick={() => setActivePage("chat")}
+>
+  <i className="fa-solid fa-comments"></i>
+  <small>Chat</small>
+
+  {unreadChat > 0 && (
+    <span className="notification-badge">
+      {unreadChat > 99 ? "99+" : unreadChat}
+    </span>
+  )}
+</div>
+
+
+          {/* <div
+  className="bottom-icon"
+  onClick={() => setActivePage("chat")}
+>
+  <i className="fa-solid fa-comments"></i>
+  <small>Chat</small>
+</div> */}
+
+
+<div
+  className="bottom-icon"
+  onClick={() => scrollToSection("section-agenda")}
+>
+  <i className="fa-solid fa-calendar-days"></i>
+  <small>Agenda</small>
+</div>
+
+
+<div
+  className="bottom-icon"
+  onClick={() => scrollToSection("section-notifications")}
+>
+  <i className="fa-solid fa-bell"></i>
+  <small>Avisos</small>
+
+  {unreadNotifications > 0 && (
+    <span className="notification-badge">
+      {unreadNotifications > 99 ? "99+" : unreadNotifications}
+    </span>
+  )}
+</div>
 
           
 <div 

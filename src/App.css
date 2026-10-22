@@ -429,3 +429,25 @@ border-left: 6px solid #269181;
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+
+.bottom-icon {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: 8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: #e53935;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 18px;
+  text-align: center;
+  box-sizing: border-box;
+}
