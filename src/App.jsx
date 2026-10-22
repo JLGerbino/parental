@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import Agenda from "./components/agenda";
+import Agenda from "./components/Agenda.jsx";
 import Notifications from "./components/Notifications.jsx";
 import Chat from "./pages/Chat.jsx";
 
