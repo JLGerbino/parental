@@ -238,3 +238,16 @@
   font: inherit;
   cursor: pointer;
 }
+
+.chat-read-status {
+  margin-left: 5px;
+  font-size: 0.75rem;
+}
+
+.chat-read-status.is-sent {
+  color: #8696a0;
+}
+
+.chat-read-status.is-read {
+  color: #53a6d8;
+}

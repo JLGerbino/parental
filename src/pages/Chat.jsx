@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   addDoc,
   collection,
@@ -24,6 +24,12 @@ function Chat({ groupId, user }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const messagesEndRef = useRef(null);
+  const lastReadAtRef = useRef(0);
+  const initialScrollDoneRef = useRef(false);
+  const [initialTargetId, setInitialTargetId] = useState(null);
+  const shouldScrollToBottomRef = useRef(false);
+  const [chatProfiles, setChatProfiles] = useState([]);
 
   // Perfil del usuario dentro del grupo
   useEffect(() => {
@@ -41,17 +47,33 @@ function Chat({ groupId, user }) {
     setLoadingProfile(true);
     setSavedName("");
     setName("");
+    lastReadAtRef.current = 0;
+initialScrollDoneRef.current = false;
+setInitialTargetId(null);
 
     getDoc(profileRef)
       .then((snapshot) => {
         if (!active) return;
 
         if (snapshot.exists()) {
-          const profileName = snapshot.data().name || "";
-          setSavedName(profileName);
-          setName(profileName);
-        }
-      })
+  const profileData = snapshot.data();
+  const profileName = profileData.name || "";
+
+  lastReadAtRef.current =
+    profileData.lastReadAt?.toMillis?.() || 0;
+
+  setSavedName(profileName);
+  setName(profileName);
+} else {
+  lastReadAtRef.current = 0;
+}
+
+      //   if (snapshot.exists()) {
+      //     const profileName = snapshot.data().name || "";
+      //     setSavedName(profileName);
+      //     setName(profileName);
+      //   }
+       })
       .catch((err) => {
         console.error("Error al cargar el perfil del chat:", err);
         if (active) setError("No se pudo cargar tu perfil.");
@@ -64,6 +86,7 @@ function Chat({ groupId, user }) {
       active = false;
     };
   }, [groupId, user?.uid]);
+  
 
   // Escuchar mensajes en tiempo real
   useEffect(() => {
@@ -86,15 +109,35 @@ function Chat({ groupId, user }) {
 
     const unsubscribe = onSnapshot(
       messagesQuery,
-      
-(snapshot) => {
-  setMessages(
-    snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }))
-  );
 
+      (snapshot) => {
+  const loadedMessages = snapshot.docs.map((item) => ({
+    id: item.id,
+    ...item.data(),
+  }));
+
+  setMessages(loadedMessages);
+
+  if (!initialScrollDoneRef.current) {
+    const firstUnread = loadedMessages.find((item) => {
+      if (item.senderUid === user.uid) return false;
+
+      const createdAt = item.createdAt?.toMillis?.();
+
+      return createdAt && createdAt > lastReadAtRef.current;
+    });
+
+    const targetId = firstUnread
+      ? firstUnread.id
+      : loadedMessages.length > 0
+        ? loadedMessages[loadedMessages.length - 1].id
+        : null;
+
+    initialScrollDoneRef.current = true;
+    setInitialTargetId(targetId);
+  }
+
+  // Registrar que el usuario está leyendo el chat.
   updateDoc(
     doc(db, "groups", groupId, "chatProfiles", user.uid),
     { lastReadAt: serverTimestamp() }
@@ -102,6 +145,63 @@ function Chat({ groupId, user }) {
     console.error("Error al actualizar la lectura:", err);
   });
 },
+
+//       (snapshot) => {
+//   const loadedMessages = snapshot.docs.map((item) => ({
+//     id: item.id,
+//     ...item.data(),
+//   }));
+
+//   setMessages(loadedMessages);
+
+//   // Solo calculamos la posición inicial una vez al entrar.
+//   if (!initialScrollDoneRef.current) {
+//     const firstUnread = loadedMessages.find((item) => {
+//       if (item.senderUid === user.uid) return false;
+
+//       const createdAt = item.createdAt?.toMillis?.();
+
+//       return (
+//         createdAt &&
+//         createdAt > lastReadAtRef.current
+//       );
+//     });
+
+//     const targetId = firstUnread
+//       ? firstUnread.id
+//       : loadedMessages.length > 0
+//         ? loadedMessages[loadedMessages.length - 1].id
+//         : null;
+
+//     initialScrollDoneRef.current = true;
+//     setInitialTargetId(targetId);
+
+//     // Actualizamos la lectura después de calcular
+//     // dónde debe comenzar la conversación.
+//     updateDoc(
+//       doc(db, "groups", groupId, "chatProfiles", user.uid),
+//       { lastReadAt: serverTimestamp() }
+//     ).catch((err) => {
+//       console.error("Error al actualizar la lectura:", err);
+//     });
+//   }
+// },
+      
+// (snapshot) => {
+//   setMessages(
+//     snapshot.docs.map((item) => ({
+//       id: item.id,
+//       ...item.data(),
+//     }))
+//   );
+
+//   updateDoc(
+//     doc(db, "groups", groupId, "chatProfiles", user.uid),
+//     { lastReadAt: serverTimestamp() }
+//   ).catch((err) => {
+//     console.error("Error al actualizar la lectura:", err);
+//   });
+// },
 
     //   (snapshot) => {
     //     setMessages(
@@ -119,6 +219,38 @@ function Chat({ groupId, user }) {
 
     return unsubscribe;
   }, [groupId, user?.uid, savedName]);
+
+  // Escuchar cuándo leyó el chat cada participante
+useEffect(() => {
+  if (!groupId || !user?.uid) {
+    setChatProfiles([]);
+    return;
+  }
+
+  const profilesRef = collection(
+    db,
+    "groups",
+    groupId,
+    "chatProfiles"
+  );
+
+  const unsubscribe = onSnapshot(
+    profilesRef,
+    (snapshot) => {
+      setChatProfiles(
+        snapshot.docs.map((item) => ({
+          uid: item.id,
+          ...item.data(),
+        }))
+      );
+    },
+    (err) => {
+      console.error("Error al escuchar perfiles del chat:", err);
+    }
+  );
+
+  return unsubscribe;
+}, [groupId, user?.uid]);
 
   // Guardar el nombre del usuario
   const handleSaveName = async (event) => {
@@ -149,36 +281,79 @@ function Chat({ groupId, user }) {
     }
   };
 
+  // Desplazamiento inicial al primer mensaje no leído
+// o al último mensaje si no hay pendientes.
+useEffect(() => {
+  if (!initialScrollDoneRef.current) return;
+
+  if (initialTargetId) {
+    const target = document.getElementById(
+      `chat-message-${initialTargetId}`
+    );
+
+    target?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  } else {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "auto",
+      block: "end",
+    });
+  }
+}, [initialTargetId]);
+
+
+// scroll al último mensaje después de enviar uno propio
+useEffect(() => {
+  if (!shouldScrollToBottomRef.current) return;
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.senderUid !== user.uid) return;
+  shouldScrollToBottomRef.current = false;
+  requestAnimationFrame(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  });
+}, [messages, user.uid]);
+
   // Enviar mensaje
-  const handleSendMessage = async (event) => {
-    event.preventDefault();
+ // Enviar mensaje
+const handleSendMessage = async (event) => {
+  event.preventDefault();
 
-    const cleanMessage = message.trim();
+  const cleanMessage = message.trim();
 
-    if (!cleanMessage || !savedName || !user?.uid || sending) return;
+  if (!cleanMessage || !savedName || !user?.uid || sending) return;
 
-    setSending(true);
-    setError("");
+  setSending(true);
+  setError("");
 
-    try {
-      await addDoc(
-        collection(db, "groups", groupId, "messages"),
-        {
-          text: cleanMessage,
-          senderUid: user.uid,
-          senderName: savedName,
-          createdAt: serverTimestamp(),
-        }
-      );
+  // Indicar que, cuando llegue el mensaje a la lista,
+  // queremos desplazarnos al final.
+  shouldScrollToBottomRef.current = true;
 
-      setMessage("");
-    } catch (err) {
-      console.error("Error al enviar el mensaje:", err);
-      setError("No se pudo enviar el mensaje. Intentá nuevamente.");
-    } finally {
-      setSending(false);
-    }
-  };
+  try {
+    await addDoc(
+      collection(db, "groups", groupId, "messages"),
+      {
+        text: cleanMessage,
+        senderUid: user.uid,
+        senderName: savedName,
+        createdAt: serverTimestamp(),
+      }
+    );
+
+    setMessage("");
+  } catch (err) {
+    shouldScrollToBottomRef.current = false;
+    console.error("Error al enviar el mensaje:", err);
+    setError("No se pudo enviar el mensaje. Intentá nuevamente.");
+  } finally {
+    setSending(false);
+  }
+};
 
   if (loadingProfile) {
     return (
@@ -233,6 +408,8 @@ function Chat({ groupId, user }) {
     );
   }
 
+  
+
   return (
     <section className="chat-page">
       <header className="chat-header">
@@ -256,11 +433,21 @@ function Chat({ groupId, user }) {
         ) : (
           messages.map((item) => {
             const ownMessage = item.senderUid === user.uid;
+            const messageTime = item.createdAt?.toMillis?.();
+            const readByOther = Boolean(
+  messageTime &&
+    chatProfiles.some(
+      (profile) =>
+        profile.uid !== user.uid &&
+        profile.lastReadAt?.toMillis?.() >= messageTime
+    )
+);
             const date = item.createdAt?.toDate?.();
 
             return (
               <div
                 key={item.id}
+                id={`chat-message-${item.id}`}
                 className={`chat-message ${
                   ownMessage ? "chat-message-own" : "chat-message-other"
                 }`}
@@ -274,6 +461,27 @@ function Chat({ groupId, user }) {
                 <p>{item.text}</p>
 
                 <span className="chat-time">
+  {date
+    ? date.toLocaleString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Enviando..."}
+
+  {ownMessage && date && (
+    <i
+      className={`chat-read-status fa-solid ${
+        readByOther ? "fa-check-double is-read" : "fa-check is-sent"
+      }`}
+      title={readByOther ? "Leído" : "Enviado"}
+      aria-label={readByOther ? "Leído" : "Enviado"}
+    />
+  )}
+</span>
+
+                {/* <span className="chat-time">
                   {date
                     ? date.toLocaleString("es-AR", {
                         day: "2-digit",
@@ -282,11 +490,12 @@ function Chat({ groupId, user }) {
                         minute: "2-digit",
                       })
                     : "Enviando..."}
-                </span>
+                </span> */}
               </div>
             );
           })
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <form className="chat-compose" onSubmit={handleSendMessage}>
