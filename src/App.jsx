@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Agenda from "./pages/Agenda.jsx";
 import Notifications from "./components/Notifications.jsx";
-import Chat from "./pages/chat.jsx";
+import Chat from "./pages/Chat.jsx";
 import Home from "./pages/Home.jsx";
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
