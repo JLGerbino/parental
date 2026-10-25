@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import Agenda from "./components/Agenda.jsx";
+import Agenda from "./pages/Agenda.jsx";
 import Notifications from "./components/Notifications.jsx";
-import Chat from "./pages/Chat.jsx";
-
+import Chat from "./pages/chat.jsx";
+import Home from "./pages/Home.jsx";
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
 import BalanceList from "./components/balanceList";
@@ -670,6 +670,23 @@ if (activePage === "chat") {
   );
 }
 
+if (activePage === "agenda") {
+  return (
+    <div className="app">
+      <button
+        type="button"
+        className="chat-back-button"
+        onClick={() => setActivePage("home")}
+      >
+        <i className="fa-solid fa-arrow-left"></i>
+        {" "}Volver
+      </button>
+
+      <Agenda groupId={groupId} user={user} />
+    </div>
+  );
+}
+
 
   return (
     
@@ -684,9 +701,9 @@ if (activePage === "chat") {
   {/* <LanguageSelector /> */}
 </div>
       <p>{t("slogan")}</p>
-      <div id="section-agenda">
+      {/* <div id="section-agenda">
   <Agenda groupId={groupId} user={user} />
-</div>
+</div> */}
 
 <div id="section-notifications">
   <Notifications groupId={groupId} user={user} onUnreadCountChange={setUnreadNotifications}/>
@@ -707,6 +724,8 @@ if (activePage === "chat") {
           {isAdmin && " (vos)"}
         </p>
       )}
+
+      <Home/>
 
       <AddPerson
         people={people}
@@ -789,7 +808,7 @@ if (activePage === "chat") {
 
 <div
   className="bottom-icon"
-  onClick={() => scrollToSection("section-agenda")}
+  onClick={() => setActivePage("agenda")}
 >
   <i className="fa-solid fa-calendar-days"></i>
   <small>Agenda</small>

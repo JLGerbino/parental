@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import {
   addDoc,
@@ -67,12 +66,7 @@ setInitialTargetId(null);
 } else {
   lastReadAtRef.current = 0;
 }
-
-      //   if (snapshot.exists()) {
-      //     const profileName = snapshot.data().name || "";
-      //     setSavedName(profileName);
-      //     setName(profileName);
-      //   }
+      
        })
       .catch((err) => {
         console.error("Error al cargar el perfil del chat:", err);
@@ -145,72 +139,6 @@ setInitialTargetId(null);
     console.error("Error al actualizar la lectura:", err);
   });
 },
-
-//       (snapshot) => {
-//   const loadedMessages = snapshot.docs.map((item) => ({
-//     id: item.id,
-//     ...item.data(),
-//   }));
-
-//   setMessages(loadedMessages);
-
-//   // Solo calculamos la posición inicial una vez al entrar.
-//   if (!initialScrollDoneRef.current) {
-//     const firstUnread = loadedMessages.find((item) => {
-//       if (item.senderUid === user.uid) return false;
-
-//       const createdAt = item.createdAt?.toMillis?.();
-
-//       return (
-//         createdAt &&
-//         createdAt > lastReadAtRef.current
-//       );
-//     });
-
-//     const targetId = firstUnread
-//       ? firstUnread.id
-//       : loadedMessages.length > 0
-//         ? loadedMessages[loadedMessages.length - 1].id
-//         : null;
-
-//     initialScrollDoneRef.current = true;
-//     setInitialTargetId(targetId);
-
-//     // Actualizamos la lectura después de calcular
-//     // dónde debe comenzar la conversación.
-//     updateDoc(
-//       doc(db, "groups", groupId, "chatProfiles", user.uid),
-//       { lastReadAt: serverTimestamp() }
-//     ).catch((err) => {
-//       console.error("Error al actualizar la lectura:", err);
-//     });
-//   }
-// },
-      
-// (snapshot) => {
-//   setMessages(
-//     snapshot.docs.map((item) => ({
-//       id: item.id,
-//       ...item.data(),
-//     }))
-//   );
-
-//   updateDoc(
-//     doc(db, "groups", groupId, "chatProfiles", user.uid),
-//     { lastReadAt: serverTimestamp() }
-//   ).catch((err) => {
-//     console.error("Error al actualizar la lectura:", err);
-//   });
-// },
-
-    //   (snapshot) => {
-    //     setMessages(
-    //       snapshot.docs.map((item) => ({
-    //         id: item.id,
-    //         ...item.data(),
-    //       }))
-    //     );
-    //   },
       (err) => {
         console.error("Error al escuchar mensajes:", err);
         setError("No se pudieron cargar los mensajes.");
@@ -220,20 +148,19 @@ setInitialTargetId(null);
     return unsubscribe;
   }, [groupId, user?.uid, savedName]);
 
+
   // Escuchar cuándo leyó el chat cada participante
 useEffect(() => {
   if (!groupId || !user?.uid) {
     setChatProfiles([]);
     return;
   }
-
   const profilesRef = collection(
     db,
     "groups",
     groupId,
     "chatProfiles"
   );
-
   const unsubscribe = onSnapshot(
     profilesRef,
     (snapshot) => {
@@ -248,9 +175,9 @@ useEffect(() => {
       console.error("Error al escuchar perfiles del chat:", err);
     }
   );
-
   return unsubscribe;
 }, [groupId, user?.uid]);
+
 
   // Guardar el nombre del usuario
   const handleSaveName = async (event) => {
@@ -473,24 +400,14 @@ const handleSendMessage = async (event) => {
   {ownMessage && date && (
     <i
       className={`chat-read-status fa-solid ${
-        readByOther ? "fa-check-double is-read" : "fa-check is-sent"
+        readByOther ? "fa-check-double is-read" : "fa-check-double is-sent"
       }`}
       title={readByOther ? "Leído" : "Enviado"}
       aria-label={readByOther ? "Leído" : "Enviado"}
     />
   )}
 </span>
-
-                {/* <span className="chat-time">
-                  {date
-                    ? date.toLocaleString("es-AR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "Enviando..."}
-                </span> */}
+                
               </div>
             );
           })

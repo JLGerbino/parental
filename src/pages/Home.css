@@ -1,0 +1,96 @@
+
+.home-family {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 16px 100px;
+  box-sizing: border-box;
+}
+
+.home-family-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.home-family-header h1 {
+  margin-bottom: 8px;
+}
+
+.home-family-header p {
+  margin-top: 0;
+  opacity: 0.75;
+}
+
+.home-section {
+  margin-bottom: 28px;
+}
+
+.home-section h2 {
+  margin-bottom: 14px;
+}
+
+.responsables-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.responsable-card {
+  padding: 18px 12px;
+  border: 1px solid #d8dfdf;
+  border-radius: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.responsable-card > i {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.responsable-card h3 {
+  margin: 8px 0;
+  font-size: 1rem;
+}
+
+.responsable-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.hijos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hijo-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 18px;
+  border: 1px solid #d8dfdf;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hijo-card span {
+  flex: 1;
+  font-weight: 600;
+}
+
+.hijo-card > i:first-child {
+  font-size: 24px;
+}
+
+@media (max-width: 380px) {
+  .responsables-grid {
+    grid-template-columns: 1fr;
+  }
+}
