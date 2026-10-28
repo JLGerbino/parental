@@ -182,8 +182,31 @@ export default function CreateGroup({ onGroupCreated, user }) {
       "_" +
       joinCode;
 
-    const ref = doc(db, "groups", groupId);
-    const snap = await getDoc(ref);
+      const ref = doc(db, "groups", groupId);
+
+console.log("Usuario autenticado:", user?.uid ?? "No disponible");
+console.log("Grupo que intenta consultar:", groupId);
+
+let snap;
+
+try {
+  snap = await getDoc(ref);
+  console.log("Consulta del grupo realizada correctamente");
+} catch (error) {
+  console.error("Error al consultar el grupo:", error);
+  console.error("Código del error:", error.code);
+
+  Swal.fire({
+    icon: "error",
+    title: "No se pudo consultar el grupo",
+    text: "Revisá la consola para ver el detalle del error.",
+  });
+
+  return;
+}
+
+    // const ref = doc(db, "groups", groupId);
+    // const snap = await getDoc(ref);
 
     if (!snap.exists()) {
       Swal.fire({

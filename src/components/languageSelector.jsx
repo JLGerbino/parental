@@ -28,22 +28,4 @@ const LanguageSelector = ({ direction = "horizontal" }) => {
   );
 };
 
-// const LanguageSelector = () => {
-//   const changeLang = (lang) => {
-//   i18n.changeLanguage(lang);
-//   localStorage.setItem("lang", lang);
-// };
-
-  
-
-  // return (
-  //   <div style={{ marginBottom: "10px" }}>
-  // <button className="botonBandera" onClick={() => changeLang("es")}><img src="argentina.png" alt="bandera Argentina" className="bandera"/></button>
-  // <button className="botonBandera" onClick={() => changeLang("pt")}><img src="brasil.png" alt="bandera Brasil" className="bandera"/></button>
-  // <button className="botonBandera" onClick={() => changeLang("en")}><img src="estados-unidos.png" alt="bandera EEUU" className="bandera"/></button>
-  // <button className="botonBandera" onClick={() => changeLang("fr")}><img src="francia.png" alt="bandera Francia" className="bandera"/></button></div>
-    
-  // );
-// };
-
 export default LanguageSelector;

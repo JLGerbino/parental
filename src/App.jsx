@@ -41,6 +41,8 @@ function App() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [activePage, setActivePage] = useState("home");
   const [unreadChat, setUnreadChat] = useState(0);
+  const [responsables, setResponsables] = useState([]);
+  const [hijos, setHijos] = useState([]);
   
 
   const [loading, setLoading] = useState(false);
@@ -65,6 +67,7 @@ function App() {
     return !prev;
   });
 };
+
   //para cerrar Settings
 useEffect(() => {
   setShowMenu(false);
@@ -353,6 +356,117 @@ useEffect(() => {
     return unsub;
   }, [groupId]);
 
+  // Ver responsables en tiempo real
+useEffect(() => {
+  if (!groupId) {
+    setResponsables([]);
+    return;
+  }
+
+  const unsub = onSnapshot(
+    collection(db, "groups", groupId, "responsables"),
+    (snap) => {
+      setResponsables(
+        snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      );
+    },
+    (error) => {
+      console.error("Error al cargar responsables:", error);
+    }
+  );
+
+  return unsub;
+}, [groupId]);
+
+// Ver hijos en tiempo real
+useEffect(() => {
+  if (!groupId) {
+    setHijos([]);
+    return;
+  }
+
+  const unsub = onSnapshot(
+    collection(db, "groups", groupId, "hijos"),
+    (snap) => {
+      setHijos(
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }))
+      );
+    },
+    (error) => {
+      console.error("Error al cargar hijos:", error);
+    }
+  );
+
+  return unsub;
+}, [groupId]);
+
+// Agregar responsable
+const addResponsibleToDB = async (responsable) => {
+  if (!groupId) return;
+
+  await addDoc(
+    collection(db, "groups", groupId, "responsables"),
+    {
+      nombre: responsable.nombre.trim(),
+      parentesco: responsable.parentesco.trim(),
+    }
+  );
+};
+
+// Editar responsable
+const editResponsibleInDB = async (responsableId, data) => {
+  if (!groupId) return;
+
+  const ref = doc(
+    db,
+    "groups",
+    groupId,
+    "responsables",
+    responsableId
+  );
+
+  await updateDoc(ref, {
+    nombre: data.nombre.trim(),
+    parentesco: data.parentesco.trim(),
+  });
+};
+
+
+  // Agregar hijo
+  const addChildToDB = async (hijo) => {
+    if (!groupId) return;
+
+    await addDoc(
+      collection(db, "groups", groupId, "hijos"),
+      {
+        nombre: hijo.nombre.trim(),
+        fechaNacimiento: hijo.fechaNacimiento,
+      }
+    );
+  };
+
+  // Editar hijo
+  const editChildInDB = async (hijoId, data) => {
+    if (!groupId) return;
+
+    const ref = doc(
+      db,
+      "groups",
+      groupId,
+      "hijos",
+      hijoId
+    );
+
+    await updateDoc(ref, {
+      nombre: data.nombre.trim(),
+      fechaNacimiento: data.fechaNacimiento,
+    });
+  };
+
+
   // Ver gastos en tiempo real
   useEffect(() => {
     if (!groupId) return;
@@ -639,7 +753,7 @@ useEffect(() => {
     return (
       <div className="app">
         <p>{t("slogan")}</p>
-        <img src="logo.png" alt="Cuentas Claras" className="Create" />
+        <img src="logo.png" alt="Vamo&Vamo" className="Create" />
 
         <CreateGroup
           user={user}
@@ -705,9 +819,7 @@ if (activePage === "agenda") {
   <Agenda groupId={groupId} user={user} />
 </div> */}
 
-<div id="section-notifications">
-  <Notifications groupId={groupId} user={user} onUnreadCountChange={setUnreadNotifications}/>
-</div>
+
 
 
       <img src="logo.png" alt="Cuentas Claras" className="Create" />
@@ -725,8 +837,30 @@ if (activePage === "agenda") {
         </p>
       )}
 
-      <Home/>
+      <Home
+  groupName={groupName}
+  responsables={responsables}
+  hijos={hijos}
+  canEdit={canEdit}
+  onAddResponsible={addResponsibleToDB}
+  onEditResponsible={editResponsibleInDB}
+  onAddChild={addChildToDB}
+  onEditChild={editChildInDB}
+  onOpenChild={(hijo) => {
+    console.log("Hijo seleccionado:", hijo);
+  }}
+/>
 
+      {/* <Home
+   groupName={groupName}
+  onOpenChild={(hijo) => {
+    console.log("Hijo seleccionado:", hijo);
+  }}
+      /> */}
+
+<div id="section-notifications">
+  <Notifications groupId={groupId} user={user} onUnreadCountChange={setUnreadNotifications}/>
+</div>
       <AddPerson
         people={people}
         addPersonToDB={addPersonToDB}
