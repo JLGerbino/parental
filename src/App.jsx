@@ -814,16 +814,13 @@ if (activePage === "agenda") {
   <button onClick={() => changeLang("fr")}>FR</button></div> */}
   {/* <LanguageSelector /> */}
 </div>
-      <p>{t("slogan")}</p>
+     
       {/* <div id="section-agenda">
   <Agenda groupId={groupId} user={user} />
 </div> */}
 
-
-
-
       <img src="logo.png" alt="Cuentas Claras" className="Create" />
-
+ <p>{t("slogan")}</p>
    
 
       <h1 className="group-title">{groupName}</h1>
