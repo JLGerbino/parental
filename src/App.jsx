@@ -779,7 +779,11 @@ if (activePage === "chat") {
         {" "}Volver
       </button>
 
-      <Chat groupId={groupId} user={user} />
+      <Chat
+  groupId={groupId}
+  user={user}
+  responsables={responsables}
+/>
     </div>
   );
 }

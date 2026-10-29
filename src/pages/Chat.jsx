@@ -14,8 +14,8 @@ import {
 import { db } from "../firebase";
 import "./Chat.css";
 
-function Chat({ groupId, user }) {   
-  const [name, setName] = useState("");
+function Chat({ groupId, user, responsables = [] }) {   
+  const [selectedResponsibleId, setSelectedResponsibleId] = useState("");
   const [savedName, setSavedName] = useState("");
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingName, setSavingName] = useState(false);
@@ -31,55 +31,107 @@ function Chat({ groupId, user }) {
   const [chatProfiles, setChatProfiles] = useState([]);
 
   // Perfil del usuario dentro del grupo
-  useEffect(() => {
-    if (!groupId || !user?.uid) return;
+  // Perfil del usuario dentro del grupo
+useEffect(() => {
+  if (!groupId || !user?.uid) return;
 
-    let active = true;
-    const profileRef = doc(
-      db,
-      "groups",
-      groupId,
-      "chatProfiles",
-      user.uid
-    );
+  let active = true;
 
-    setLoadingProfile(true);
-    setSavedName("");
-    setName("");
-    lastReadAtRef.current = 0;
-initialScrollDoneRef.current = false;
-setInitialTargetId(null);
+  const profileRef = doc(
+    db,
+    "groups",
+    groupId,
+    "chatProfiles",
+    user.uid
+  );
 
-    getDoc(profileRef)
-      .then((snapshot) => {
-        if (!active) return;
-
-        if (snapshot.exists()) {
-  const profileData = snapshot.data();
-  const profileName = profileData.name || "";
-
-  lastReadAtRef.current =
-    profileData.lastReadAt?.toMillis?.() || 0;
-
-  setSavedName(profileName);
-  setName(profileName);
-} else {
+  setLoadingProfile(true);
+  setSavedName("");
+  setSelectedResponsibleId("");
   lastReadAtRef.current = 0;
-}
-      
-       })
-      .catch((err) => {
-        console.error("Error al cargar el perfil del chat:", err);
-        if (active) setError("No se pudo cargar tu perfil.");
-      })
-      .finally(() => {
-        if (active) setLoadingProfile(false);
-      });
+  initialScrollDoneRef.current = false;
+  setInitialTargetId(null);
 
-    return () => {
-      active = false;
-    };
-  }, [groupId, user?.uid]);
+  getDoc(profileRef)
+    .then((snapshot) => {
+      if (!active) return;
+
+      if (snapshot.exists()) {
+        const profileData = snapshot.data();
+        const profileName = profileData.name || "";
+
+        lastReadAtRef.current =
+          profileData.lastReadAt?.toMillis?.() || 0;
+
+        setSavedName(profileName);
+        setSelectedResponsibleId(
+          profileData.responsableId || ""
+        );
+      } else {
+        lastReadAtRef.current = 0;
+      }
+    })
+    .catch((err) => {
+      console.error("Error al cargar el perfil del chat:", err);
+      if (active) setError("No se pudo cargar tu perfil.");
+    })
+    .finally(() => {
+      if (active) setLoadingProfile(false);
+    });
+
+  return () => {
+    active = false;
+  };
+}, [groupId, user?.uid]);
+//   useEffect(() => {
+//     if (!groupId || !user?.uid) return;
+
+//     let active = true;
+//     const profileRef = doc(
+//       db,
+//       "groups",
+//       groupId,
+//       "chatProfiles",
+//       user.uid
+//     );
+
+//     setLoadingProfile(true);
+//     setSavedName("");
+//     setName("");
+//     lastReadAtRef.current = 0;
+// initialScrollDoneRef.current = false;
+// setInitialTargetId(null);
+
+//     getDoc(profileRef)
+//       .then((snapshot) => {
+//         if (!active) return;
+
+//         if (snapshot.exists()) {
+//   const profileData = snapshot.data();
+//   const profileName = profileData.name || "";
+
+//   lastReadAtRef.current =
+//     profileData.lastReadAt?.toMillis?.() || 0;
+
+//   setSavedName(profileName);
+//   setName(profileName);
+// } else {
+//   lastReadAtRef.current = 0;
+// }
+      
+//        })
+//       .catch((err) => {
+//         console.error("Error al cargar el perfil del chat:", err);
+//         if (active) setError("No se pudo cargar tu perfil.");
+//       })
+//       .finally(() => {
+//         if (active) setLoadingProfile(false);
+//       });
+
+//     return () => {
+//       active = false;
+//     };
+//   }, [groupId, user?.uid]);
   
 
   // Escuchar mensajes en tiempo real
@@ -179,34 +231,67 @@ useEffect(() => {
 }, [groupId, user?.uid]);
 
 
-  // Guardar el nombre del usuario
-  const handleSaveName = async (event) => {
-    event.preventDefault();
+// Guardar el responsable elegido para el chat
+const handleSaveName = async (event) => {
+  event.preventDefault();
 
-    const cleanName = name.trim();
-    if (!cleanName || !user?.uid || !groupId) return;
+  const responsable = responsables.find(
+    (item) => item.id === selectedResponsibleId
+  );
 
-    setSavingName(true);
-    setError("");
+  if (!responsable || !user?.uid || !groupId) return;
 
-    try {
-      await setDoc(
-        doc(db, "groups", groupId, "chatProfiles", user.uid),
-        {
-          name: cleanName,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+  setSavingName(true);
+  setError("");
 
-      setSavedName(cleanName);
-    } catch (err) {
-      console.error("Error al guardar el nombre:", err);
-      setError("No se pudo guardar el nombre. Intentá nuevamente.");
-    } finally {
-      setSavingName(false);
-    }
-  };
+  try {
+    await setDoc(
+      doc(db, "groups", groupId, "chatProfiles", user.uid),
+      {
+        name: responsable.nombre,
+        responsableId: responsable.id,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    setSavedName(responsable.nombre);
+  } catch (err) {
+    console.error("Error al guardar el responsable:", err);
+    setError("No se pudo guardar tu perfil. Intentá nuevamente.");
+  } finally {
+    setSavingName(false);
+  }
+};
+
+  // // Guardar el nombre del usuario
+  // const handleSaveName = async (event) => {
+  //   event.preventDefault();
+
+  //   const cleanName = name.trim();
+  //   if (!cleanName || !user?.uid || !groupId) return;
+
+  //   setSavingName(true);
+  //   setError("");
+
+  //   try {
+  //     await setDoc(
+  //       doc(db, "groups", groupId, "chatProfiles", user.uid),
+  //       {
+  //         name: cleanName,
+  //         updatedAt: serverTimestamp(),
+  //       },
+  //       { merge: true }
+  //     );
+
+  //     setSavedName(cleanName);
+  //   } catch (err) {
+  //     console.error("Error al guardar el nombre:", err);
+  //     setError("No se pudo guardar el nombre. Intentá nuevamente.");
+  //   } finally {
+  //     setSavingName(false);
+  //   }
+  // };
 
   // Desplazamiento inicial al primer mensaje no leído
 // o al último mensaje si no hay pendientes.
@@ -300,40 +385,99 @@ const handleSendMessage = async (event) => {
     );
   }
 
-  // Primera entrada: elegir nombre
-  if (!savedName) {
-    return (
-      <section className="chat-page">
-        <header className="chat-header">
-          <div className="chat-header-icon">
-            <i className="fa-solid fa-comments" />
-          </div>
-          <div>
-            <h2>Chat familiar</h2>
-            <p>Identificate para comenzar</p>
-          </div>
-        </header>
+  // Primera entrada: elegir responsable
+if (!savedName || !selectedResponsibleId) {
+  return (
+    <section className="chat-page">
+      <header className="chat-header">
+        <div className="chat-header-icon">
+          <i className="fa-solid fa-comments" />
+        </div>
 
+        <div>
+          <h2>Chat familiar</h2>
+          <p>Seleccioná quién sos para comenzar</p>
+        </div>
+      </header>
+
+      {responsables.length === 0 ? (
+        <div className="chat-name-form">
+          <p>
+            Todavía no hay responsables cargados en esta familia.
+            Primero hay que agregarlos desde la pantalla principal.
+          </p>
+        </div>
+      ) : (
         <form className="chat-name-form" onSubmit={handleSaveName}>
-          <label htmlFor="chat-name">¿Cómo te llamás?</label>
-          <input
-            id="chat-name"
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Ingresá tu nombre"
-            maxLength={60}
+          <label htmlFor="chat-responsable">
+            ¿Quién está usando el chat?
+          </label>
+
+          <select
+            id="chat-responsable"
+            value={selectedResponsibleId}
+            onChange={(event) =>
+              setSelectedResponsibleId(event.target.value)
+            }
             required
-          />
-          <button type="submit" disabled={savingName || !name.trim()}>
+          >
+            <option value="">Seleccioná tu nombre</option>
+
+            {responsables.map((responsable) => (
+              <option key={responsable.id} value={responsable.id}>
+                {responsable.nombre} — {responsable.parentesco}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="submit"
+            disabled={savingName || !selectedResponsibleId}
+          >
             {savingName ? "Guardando..." : "Ingresar al chat"}
           </button>
         </form>
+      )}
 
-        {error && <p className="chat-error">{error}</p>}
-      </section>
-    );
-  }
+      {error && <p className="chat-error">{error}</p>}
+    </section>
+  );
+}
+
+  // // Primera entrada: elegir nombre
+  // if (!savedName) {
+  //   return (
+  //     <section className="chat-page">
+  //       <header className="chat-header">
+  //         <div className="chat-header-icon">
+  //           <i className="fa-solid fa-comments" />
+  //         </div>
+  //         <div>
+  //           <h2>Chat familiar</h2>
+  //           <p>Identificate para comenzar</p>
+  //         </div>
+  //       </header>
+
+  //       <form className="chat-name-form" onSubmit={handleSaveName}>
+  //         <label htmlFor="chat-name">¿Cómo te llamás?</label>
+  //         <input
+  //           id="chat-name"
+  //           type="text"
+  //           value={name}
+  //           onChange={(event) => setName(event.target.value)}
+  //           placeholder="Ingresá tu nombre"
+  //           maxLength={60}
+  //           required
+  //         />
+  //         <button type="submit" disabled={savingName || !name.trim()}>
+  //           {savingName ? "Guardando..." : "Ingresar al chat"}
+  //         </button>
+  //       </form>
+
+  //       {error && <p className="chat-error">{error}</p>}
+  //     </section>
+  //   );
+  // }
 
   
 
