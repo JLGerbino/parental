@@ -322,6 +322,44 @@ function Home({
       </header> */}
 
       <section className="home-section">
+  <h2>Responsables</h2>
+
+  <div className="responsables-grid">
+    {responsables.map((responsable) => (
+      <article
+        className={`responsable-card ${canEdit ? "clickable" : ""}`}
+        key={responsable.id}
+        onClick={() => {
+          if (canEdit && !saving) {
+            handleEditResponsible(responsable);
+          }
+        }}
+      >
+        <i className="fa-solid fa-user"></i>
+        <h3>{responsable.nombre}</h3>
+        <p>{responsable.parentesco}</p>
+      </article>
+    ))}
+  </div>
+
+  {responsables.length === 0 && (
+    <p>Todavía no hay responsables cargados.</p>
+  )}
+
+  {canEdit && responsables.length < 2 && (
+    <button
+      type="button"
+      className="add-responsible-button"
+      onClick={handleAddResponsible}
+      disabled={saving}
+    >
+      <i className="fa-solid fa-user-plus"></i>
+      Agregar responsable
+    </button>
+  )}
+</section>
+
+      {/* <section className="home-section">
         <h2>Responsables</h2>
 
         <div className="responsables-grid">
@@ -337,7 +375,7 @@ function Home({
                   onClick={() => handleEditResponsible(responsable)}
                   disabled={saving}
                 >
-                  <i className="fa-solid fa-pen"></i> Editar
+                  <i className="fa-solid fa-pen"></i>
                 </button>
               )}
             </article>
@@ -359,41 +397,84 @@ function Home({
             Agregar responsable
           </button>
         )}
-      </section>
+      </section> */}
 
       <section className="home-section">
+  <h2>Hijos</h2>
+
+  <div className="hijos-list">
+    {hijos.map((hijo) => (
+      <article
+        className="hijo-card"
+        key={hijo.id}
+        onClick={() => onOpenChild?.(hijo)}
+      >
+        <div className="hijo-card-main">
+          <strong>{hijo.nombre}</strong>
+          <small>
+            {hijo.fechaNacimiento
+              ? `Fecha nac.: ${hijo.fechaNacimiento}`
+              : ""}
+          </small>
+        </div>
+
+        <i className="fa-solid fa-chevron-right"></i>
+      </article>
+    ))}
+  </div>
+
+  {hijos.length === 0 && (
+    <p>Todavía no hay hijos cargados.</p>
+  )}
+
+  {canEdit && (
+    <button
+      type="button"
+      className="add-responsible-button"
+      onClick={handleAddChild}
+      disabled={saving}
+    >
+      <i className="fa-solid fa-user-plus"></i>
+      Agregar hijo/a
+    </button>
+  )}
+</section>
+
+      {/* <section className="home-section">
         <h2>Hijos</h2>
 
         <div className="hijos-list">
           {hijos.map((hijo) => (
             <div className="hijo-card" key={hijo.id}>
+              <div>
               <button
                 type="button"
                 className="hijo-card-main"
                 onClick={() => onOpenChild?.(hijo)}
               >
-                <i className="fa-solid fa-child"></i>
-                <span>
-                  {hijo.nombre}
+                
+                <div>{hijo.nombre}</div></button><i className="fa-solid fa-chevron-right"></i>
+                <div>                  
                   <small>
                     {hijo.fechaNacimiento
-                      ? `Nacimiento: ${hijo.fechaNacimiento}`
+                      ? `Fecha nac.: ${hijo.fechaNacimiento} `
                       : ""}
                   </small>
-                </span>
-                <i className="fa-solid fa-chevron-right"></i>
-              </button>
-
-              {canEdit && (
+                </div>
+                {canEdit && (
                 <button
                   type="button"
                   className="hijo-edit-button"
                   onClick={() => handleEditChild(hijo)}
                   disabled={saving}
                 >
-                  <i className="fa-solid fa-pen"></i> Editar
+                  <i className="fa-solid fa-pen"></i>
                 </button>
               )}
+                
+              </div>
+
+              
             </div>
           ))}
         </div>
@@ -413,7 +494,7 @@ function Home({
             Agregar hijo/a
           </button>
         )}
-      </section>
+      </section> */}
     </main>
   );
 }

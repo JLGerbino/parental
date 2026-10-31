@@ -3,6 +3,7 @@ import Agenda from "./pages/Agenda.jsx";
 import Notifications from "./components/Notifications.jsx";
 import Chat from "./pages/Chat.jsx";
 import Home from "./pages/Home.jsx";
+import ChildProfile from "./pages/ChildProfile.jsx";
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
 import BalanceList from "./components/balanceList";
@@ -51,6 +52,7 @@ function App() {
   const [selectedResponsibleId, setSelectedResponsibleId] = useState("");
   const [savingResponsible, setSavingResponsible] = useState(false);
   const [responsibleError, setResponsibleError] = useState("");
+  const [selectedChild, setSelectedChild] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -858,6 +860,16 @@ useEffect(() => {
   };
 }, [groupId, user?.uid, activePage]);
 
+const handleOpenChild = (hijo) => {
+  setSelectedChild(hijo);
+  setActivePage("child-profile");
+};
+
+const handleBackFromChild = () => {
+  setSelectedChild(null);
+  setActivePage("home");
+};
+
 
   //Bienvenida
   if (!started && !groupId) {
@@ -1008,6 +1020,20 @@ if (activePage === "agenda" && bothResponsiblesLinked) {
 }
 
 
+if (activePage === "child-profile") {
+  return (
+    <div className="app">
+      <ChildProfile
+        hijo={selectedChild}
+        canEdit={canEdit}
+        onBack={handleBackFromChild}
+        onEdit={editChildInDB}
+      />
+    </div>
+  );
+}
+
+
   return (
     
     <div className="app">
@@ -1049,9 +1075,7 @@ if (activePage === "agenda" && bothResponsiblesLinked) {
   onEditResponsible={editResponsibleInDB}
   onAddChild={addChildToDB}
   onEditChild={editChildInDB}
-  onOpenChild={(hijo) => {
-    console.log("Hijo seleccionado:", hijo);
-  }}
+  onOpenChild={handleOpenChild}
 />
 
    {bothResponsiblesLinked && (
