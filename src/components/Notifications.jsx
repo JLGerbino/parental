@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   arrayUnion,
@@ -70,8 +69,10 @@ export default function Notifications({ groupId, user, onUnreadCountChange }) {
   }, [groupId, user?.uid]);
 
   const otherNotifications = notifications.filter(
-    (notification) => notification.actorUid !== user?.uid
-  );
+  (n) =>
+    n.actorUid !== user?.uid &&
+    !(n.deletedBy || []).includes(user?.uid)
+);  
 
   const unreadCount = otherNotifications.filter(
     (notification) => !(notification.readBy || []).includes(user?.uid)
@@ -98,6 +99,24 @@ export default function Notifications({ groupId, user, onUnreadCountChange }) {
       setError("No se pudo marcar la notificación como leída.");
     }
   }
+
+  async function deleteNotification(notification) {
+  if (!user?.uid) return;
+
+  // Solo se pueden eliminar notificaciones leídas
+  if (!(notification.readBy || []).includes(user.uid)) return;
+
+  try {
+    await updateDoc(
+      doc(db, "groups", groupId, "notifications", notification.id),
+      {
+        deletedBy: arrayUnion(user.uid),
+      }
+    );
+  } catch (err) {
+    console.error("Error al eliminar notificación:", err);
+  }
+}
 
   return (
     <section className="notifications-section" id="section-notifications">
@@ -166,6 +185,16 @@ export default function Notifications({ groupId, user, onUnreadCountChange }) {
                     Marcar como leída
                   </button>
                 )}
+
+                {(notification.readBy || []).includes(user?.uid) && (
+  <button
+    className="notification-delete-button"
+    onClick={() => deleteNotification(notification)}
+  >
+    Eliminar
+  </button>
+)}
+
               </article>
             );
           })}

@@ -3,7 +3,7 @@ html, body {
   padding: 0;
   min-height: 100%;
   scroll-behavior: smooth;
-  background-color: rgb(173, 173, 109);
+  background-color: rgb(223, 223, 220);
 }
 
 .app {
@@ -13,7 +13,7 @@ html, body {
   margin: 20px auto;
   padding: 10px;
   text-align: center;
-  background-color:rgb(173, 173, 109); 
+  background-color:rgb(223, 223, 220); 
   /*#ADC1c0;*/
 }
 
@@ -39,7 +39,7 @@ button {
   margin-left: 5px;
   margin-right: 10px;
   padding: 6px 12px;
-  background-color: #35b67e;
+  background-color:#43ADB6;
   border: none;
   color:  black;
   border-radius: 6px;
@@ -47,7 +47,7 @@ button {
 }
 
 button:hover {
-  background-color: #269181;
+  background-color: #78b2b8;
   transform: scale(1.02);
 }
 
@@ -56,7 +56,7 @@ ul {
   padding: 0;
 }
 h1{
-  color: white;
+  color: #283655;
 }
 h2{
   font-size: 25px;
@@ -329,7 +329,7 @@ border-left: 6px solid #269181;
   bottom: 0;
   left: 0;
   width: 100%;  
-  background-color: #35b67e ;
+  background-color: #43ADB6;
   border-top: 1px solid #ccc;
   display: flex;
   justify-content: space-around;
@@ -451,4 +451,10 @@ border-left: 6px solid #269181;
   line-height: 18px;
   text-align: center;
   box-sizing: border-box;
+}
+
+.bottom-icon.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }

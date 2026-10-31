@@ -25,6 +25,8 @@ import {
   updateDoc,
   writeBatch,
   orderBy,
+  runTransaction,
+  serverTimestamp,
 } from "firebase/firestore";
 import "./App.css";
 
@@ -43,7 +45,12 @@ function App() {
   const [unreadChat, setUnreadChat] = useState(0);
   const [responsables, setResponsables] = useState([]);
   const [hijos, setHijos] = useState([]);
-  
+  const [responsableVinculado, setResponsableVinculado] = useState(null);
+  const [identificandoResponsable, setIdentificandoResponsable] = useState(true);
+  const [responsablesLoaded, setResponsablesLoaded] = useState(false);
+  const [selectedResponsibleId, setSelectedResponsibleId] = useState("");
+  const [savingResponsible, setSavingResponsible] = useState(false);
+  const [responsibleError, setResponsibleError] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -57,6 +64,7 @@ function App() {
   const [debts, setDebts] = useState([]);
   const hasAdmin = !!group?.adminUid;
   const isAdmin = !!group?.adminUid && group.adminUid === user?.uid;
+  const bothResponsiblesLinked = responsables.length >= 2 && responsables.every((responsable) => !!responsable.linkedUid);
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [showLang, setShowLang] = useState(false);
@@ -360,6 +368,7 @@ useEffect(() => {
 useEffect(() => {
   if (!groupId) {
     setResponsables([]);
+    setResponsablesLoaded(false);
     return;
   }
 
@@ -369,6 +378,7 @@ useEffect(() => {
       setResponsables(
         snap.docs.map(d => ({ id: d.id, ...d.data() }))
       );
+      setResponsablesLoaded(true);
     },
     (error) => {
       console.error("Error al cargar responsables:", error);
@@ -377,6 +387,21 @@ useEffect(() => {
 
   return unsub;
 }, [groupId]);
+
+// Identificar al responsable vinculado con esta cuenta
+useEffect(() => {
+  if (!groupId || !user?.uid || !responsablesLoaded) {
+    setIdentificandoResponsable(true);
+    return;
+  }
+
+  const responsable = responsables.find(
+    (item) => item.linkedUid === user.uid
+  );
+
+  setResponsableVinculado(responsable || null);
+  setIdentificandoResponsable(false);
+}, [groupId, user?.uid, responsables, responsablesLoaded]);
 
 // Ver hijos en tiempo real
 useEffect(() => {
@@ -432,6 +457,107 @@ const editResponsibleInDB = async (responsableId, data) => {
     nombre: data.nombre.trim(),
     parentesco: data.parentesco.trim(),
   });
+};
+
+// Vincular la cuenta con un responsable
+const handleSelectResponsible = async (event) => {
+  event.preventDefault();
+
+  const responsable = responsables.find(
+    (item) => item.id === selectedResponsibleId
+  );
+
+  if (!responsable || !user?.uid || !groupId) return;
+
+  setSavingResponsible(true);
+  setResponsibleError("");
+
+  try {
+    const responsableRef = doc(
+      db,
+      "groups",
+      groupId,
+      "responsables",
+      responsable.id
+    );
+
+    const profileRef = doc(
+      db,
+      "groups",
+      groupId,
+      "chatProfiles",
+      user.uid
+    );
+
+    await runTransaction(db, async (transaction) => {
+      const responsableSnap = await transaction.get(responsableRef);
+      const profileSnap = await transaction.get(profileRef);
+
+      if (!responsableSnap.exists()) {
+        throw new Error("RESPONSABLE_NO_EXISTE");
+      }
+
+      const responsableData = responsableSnap.data();
+
+      if (
+        responsableData.linkedUid &&
+        responsableData.linkedUid !== user.uid
+      ) {
+        throw new Error("RESPONSABLE_VINCULADO");
+      }
+
+      if (
+        profileSnap.exists() &&
+        profileSnap.data().responsableId &&
+        profileSnap.data().responsableId !== responsable.id
+      ) {
+        throw new Error("CUENTA_YA_VINCULADA");
+      }
+
+      transaction.update(responsableRef, {
+        linkedUid: user.uid,
+        linkedAt: serverTimestamp(),
+      });
+
+      transaction.set(
+        profileRef,
+        {
+          name: responsable.nombre,
+          responsableId: responsable.id,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    });
+
+    setResponsableVinculado({
+      ...responsable,
+      linkedUid: user.uid,
+    });
+
+  } catch (err) {
+    console.error("Error al vincular responsable:", err);
+
+    if (err.message === "RESPONSABLE_VINCULADO") {
+      setResponsibleError(
+        "Este responsable ya está vinculado a otra cuenta."
+      );
+    } else if (err.message === "CUENTA_YA_VINCULADA") {
+      setResponsibleError(
+        "Esta cuenta ya está vinculada a otro responsable."
+      );
+    } else if (err.message === "RESPONSABLE_NO_EXISTE") {
+      setResponsibleError(
+        "El responsable seleccionado ya no existe."
+      );
+    } else {
+      setResponsibleError(
+        "No se pudo guardar la vinculación. Intentá nuevamente."
+      );
+    }
+  } finally {
+    setSavingResponsible(false);
+  }
 };
 
 
@@ -766,8 +892,84 @@ useEffect(() => {
     );
   }
 
+  // Esperar a que Firebase y los responsables estén cargados
+if (!user?.uid || identificandoResponsable) {
+  return (
+    <div className="app">
+      <p>Cargando...</p>
+    </div>
+  );
+}
+
+// Seleccionar responsable si la cuenta todavía no está vinculada
+if (!responsableVinculado && responsables.length >= 2) {
+  return (
+    <div className="app">
+      <div className="responsible-selection">
+        <h2>Identificación familiar</h2>
+
+        <p>Seleccioná quién está utilizando la aplicación.</p>
+
+        {responsables.length === 0 ? (
+          <p>
+            Todavía no hay responsables cargados.
+            Primero hay que agregarlos a la familia.
+          </p>
+        ) : (
+          <form onSubmit={handleSelectResponsible}>
+            <label htmlFor="responsible-select">
+              ¿Quién sos?
+            </label>
+
+            <select
+              id="responsible-select"
+              value={selectedResponsibleId}
+              onChange={(event) =>
+                setSelectedResponsibleId(event.target.value)
+              }
+              required
+            >
+              <option value="">Seleccioná tu nombre</option>
+
+              {responsables.map((responsable) => (
+                <option
+                  key={responsable.id}
+                  value={responsable.id}
+                  disabled={
+                    responsable.linkedUid &&
+                    responsable.linkedUid !== user.uid
+                  }
+                >
+                  {responsable.nombre} — {responsable.parentesco}
+                  {responsable.linkedUid &&
+                    responsable.linkedUid !== user.uid
+                    ? " (Vinculado)"
+                    : ""}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="submit"
+              disabled={savingResponsible || !selectedResponsibleId}
+            >
+              {savingResponsible
+                ? "Guardando..."
+                : "Continuar"}
+            </button>
+          </form>
+        )}
+
+        {responsibleError && (
+          <p className="chat-error">{responsibleError}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
   
-if (activePage === "chat") {
+if (activePage === "chat" && bothResponsiblesLinked) {
   return (
     <div className="app chat-screen">
       <button
@@ -788,7 +990,7 @@ if (activePage === "chat") {
   );
 }
 
-if (activePage === "agenda") {
+if (activePage === "agenda" && bothResponsiblesLinked) {
   return (
     <div className="app">
       <button
@@ -800,7 +1002,7 @@ if (activePage === "agenda") {
         {" "}Volver
       </button>
 
-      <Agenda groupId={groupId} user={user} />
+      <Agenda groupId={groupId} user={user} hijos={hijos} responsables={responsables}/>
     </div>
   );
 }
@@ -852,16 +1054,16 @@ if (activePage === "agenda") {
   }}
 />
 
-      {/* <Home
-   groupName={groupName}
-  onOpenChild={(hijo) => {
-    console.log("Hijo seleccionado:", hijo);
-  }}
-      /> */}
+   {bothResponsiblesLinked && (
+  <div id="section-notifications">
+    <Notifications
+      groupId={groupId}
+      user={user}
+      onUnreadCountChange={setUnreadNotifications}
+    />
+  </div>
+)}  
 
-<div id="section-notifications">
-  <Notifications groupId={groupId} user={user} onUnreadCountChange={setUnreadNotifications}/>
-</div>
       <AddPerson
         people={people}
         addPersonToDB={addPersonToDB}
@@ -918,7 +1120,7 @@ if (activePage === "agenda") {
 
           
 <div
-  className="bottom-icon"
+  className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""}`}
   onClick={() => setActivePage("chat")}
 >
   <i className="fa-solid fa-comments"></i>
@@ -932,18 +1134,13 @@ if (activePage === "agenda") {
 </div>
 
 
-          {/* <div
-  className="bottom-icon"
-  onClick={() => setActivePage("chat")}
->
-  <i className="fa-solid fa-comments"></i>
-  <small>Chat</small>
-</div> */}
-
-
+        
 <div
-  className="bottom-icon"
-  onClick={() => setActivePage("agenda")}
+  className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""}`}
+  onClick={() => {
+    if (!bothResponsiblesLinked) return;
+    setActivePage("agenda");
+  }}
 >
   <i className="fa-solid fa-calendar-days"></i>
   <small>Agenda</small>
@@ -951,7 +1148,7 @@ if (activePage === "agenda") {
 
 
 <div
-  className="bottom-icon"
+  className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""}`}
   onClick={() => scrollToSection("section-notifications")}
 >
   <i className="fa-solid fa-bell"></i>

@@ -37,8 +37,9 @@
 
 .responsable-card {
   padding: 18px 12px;
-  border: 1px solid #d8dfdf;
+  /*border: 5px solid #5C59C7;*/  
   border-radius: 14px;
+  box-shadow: 0 6px 10px #5C59C7;
   text-align: center;
   overflow-wrap: anywhere;
 }

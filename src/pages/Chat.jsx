@@ -7,6 +7,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -230,8 +231,7 @@ useEffect(() => {
   return unsubscribe;
 }, [groupId, user?.uid]);
 
-
-// Guardar el responsable elegido para el chat
+// Vincular la cuenta con el responsable y guardar el perfil del chat
 const handleSaveName = async (event) => {
   event.preventDefault();
 
@@ -245,53 +245,85 @@ const handleSaveName = async (event) => {
   setError("");
 
   try {
-    await setDoc(
-      doc(db, "groups", groupId, "chatProfiles", user.uid),
-      {
-        name: responsable.nombre,
-        responsableId: responsable.id,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
+    const responsableRef = doc(
+      db,
+      "groups",
+      groupId,
+      "responsables",
+      responsable.id
     );
+
+    const profileRef = doc(
+      db,
+      "groups",
+      groupId,
+      "chatProfiles",
+      user.uid
+    );
+
+    await runTransaction(db, async (transaction) => {
+      // Primero leemos ambos documentos
+      const responsableSnap = await transaction.get(responsableRef);
+      const profileSnap = await transaction.get(profileRef);
+
+      if (!responsableSnap.exists()) {
+        throw new Error("RESPONSABLE_NO_EXISTE");
+      }
+
+      const responsableData = responsableSnap.data();
+
+      // Comprobar si otra cuenta ya utiliza este responsable
+      if (
+        responsableData.linkedUid &&
+        responsableData.linkedUid !== user.uid
+      ) {
+        throw new Error("RESPONSABLE_VINCULADO");
+      }
+
+      // Comprobar si esta cuenta ya tiene otro responsable asignado
+      if (
+        profileSnap.exists() &&
+        profileSnap.data().responsableId &&
+        profileSnap.data().responsableId !== responsable.id
+      ) {
+        throw new Error("CUENTA_YA_VINCULADA");
+      }
+
+      // Vincular responsable con la cuenta
+      transaction.update(responsableRef, {
+        linkedUid: user.uid,
+        linkedAt: serverTimestamp(),
+      });
+
+      // Guardar perfil del chat
+      transaction.set(
+        profileRef,
+        {
+          name: responsable.nombre,
+          responsableId: responsable.id,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    });
 
     setSavedName(responsable.nombre);
   } catch (err) {
-    console.error("Error al guardar el responsable:", err);
-    setError("No se pudo guardar tu perfil. Intentá nuevamente.");
+    console.error("Error al vincular el responsable:", err);
+
+    if (err.message === "RESPONSABLE_VINCULADO") {
+      setError("Este responsable ya está vinculado a otra cuenta.");
+    } else if (err.message === "CUENTA_YA_VINCULADA") {
+      setError("Esta cuenta ya está vinculada a otro responsable.");
+    } else if (err.message === "RESPONSABLE_NO_EXISTE") {
+      setError("El responsable seleccionado ya no existe.");
+    } else {
+      setError("No se pudo guardar la vinculación. Intentá nuevamente.");
+    }
   } finally {
     setSavingName(false);
   }
 };
-
-  // // Guardar el nombre del usuario
-  // const handleSaveName = async (event) => {
-  //   event.preventDefault();
-
-  //   const cleanName = name.trim();
-  //   if (!cleanName || !user?.uid || !groupId) return;
-
-  //   setSavingName(true);
-  //   setError("");
-
-  //   try {
-  //     await setDoc(
-  //       doc(db, "groups", groupId, "chatProfiles", user.uid),
-  //       {
-  //         name: cleanName,
-  //         updatedAt: serverTimestamp(),
-  //       },
-  //       { merge: true }
-  //     );
-
-  //     setSavedName(cleanName);
-  //   } catch (err) {
-  //     console.error("Error al guardar el nombre:", err);
-  //     setError("No se pudo guardar el nombre. Intentá nuevamente.");
-  //   } finally {
-  //     setSavingName(false);
-  //   }
-  // };
 
   // Desplazamiento inicial al primer mensaje no leído
 // o al último mensaje si no hay pendientes.
@@ -444,42 +476,7 @@ if (!savedName || !selectedResponsibleId) {
   );
 }
 
-  // // Primera entrada: elegir nombre
-  // if (!savedName) {
-  //   return (
-  //     <section className="chat-page">
-  //       <header className="chat-header">
-  //         <div className="chat-header-icon">
-  //           <i className="fa-solid fa-comments" />
-  //         </div>
-  //         <div>
-  //           <h2>Chat familiar</h2>
-  //           <p>Identificate para comenzar</p>
-  //         </div>
-  //       </header>
-
-  //       <form className="chat-name-form" onSubmit={handleSaveName}>
-  //         <label htmlFor="chat-name">¿Cómo te llamás?</label>
-  //         <input
-  //           id="chat-name"
-  //           type="text"
-  //           value={name}
-  //           onChange={(event) => setName(event.target.value)}
-  //           placeholder="Ingresá tu nombre"
-  //           maxLength={60}
-  //           required
-  //         />
-  //         <button type="submit" disabled={savingName || !name.trim()}>
-  //           {savingName ? "Guardando..." : "Ingresar al chat"}
-  //         </button>
-  //       </form>
-
-  //       {error && <p className="chat-error">{error}</p>}
-  //     </section>
-  //   );
-  // }
-
-  
+   
 
   return (
     <section className="chat-page">
@@ -490,7 +487,7 @@ if (!savedName || !selectedResponsibleId) {
 
         <div>
           <h2>Chat familiar</h2>
-          <p>Estás participando como {savedName}</p>
+          <p>Chat de {savedName}</p>
         </div>
       </header>
 
