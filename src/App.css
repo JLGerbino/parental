@@ -34,6 +34,11 @@ input, select {
   border-radius: 8px;
 }
 
+.app-name{
+  color: #b61028;
+  font-size: 20px;
+}
+
 button {
   margin-top: 10px;
   margin-left: 5px;
@@ -92,7 +97,7 @@ li,p{
   width: 280px;
 }
 .Create{
-  width:130px;
+  width:120px;
 }
 .tacho{
   text-align: right;

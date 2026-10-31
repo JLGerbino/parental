@@ -11,7 +11,6 @@ function Home({
   onAddResponsible,
   onEditResponsible,
   onAddChild,
-  onEditChild,
   onOpenChild,
 }) {
   const [saving, setSaving] = useState(false);
@@ -227,92 +226,7 @@ function Home({
     }
   };
 
-  // Editar hijo
-  const handleEditChild = async (hijo) => {
-    const nombreSeguro = String(hijo.nombre || "")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-    const hoy = new Date().toLocaleDateString("en-CA");
-
-    const result = await Swal.fire({
-      title: "Editar hijo/a",
-      html: `
-        <input
-          id="hijo-nombre"
-          class="swal2-input"
-          placeholder="Nombre y apellido"
-          maxlength="120"
-          value="${nombreSeguro}"
-        >
-        <label for="hijo-fecha" style="display:block; margin-top:16px;">
-          Fecha de nacimiento
-        </label>
-        <input
-          id="hijo-fecha"
-          type="date"
-          class="swal2-input"
-          max="${hoy}"
-          value="${String(hijo.fechaNacimiento || "").replace(/[^0-9-]/g, "")}"
-        >
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Guardar cambios",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#269181",
-      preConfirm: () => {
-        const nombre = document
-          .getElementById("hijo-nombre")
-          .value.trim();
-
-        const fechaNacimiento = document
-          .getElementById("hijo-fecha")
-          .value;
-
-        if (!nombre || !fechaNacimiento) {
-          Swal.showValidationMessage(
-            "Ingresá el nombre y apellido y la fecha de nacimiento."
-          );
-          return false;
-        }
-
-        if (fechaNacimiento > hoy) {
-          Swal.showValidationMessage(
-            "La fecha de nacimiento no puede ser futura."
-          );
-          return false;
-        }
-
-        return { nombre, fechaNacimiento };
-      },
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      setSaving(true);
-      await onEditChild(hijo.id, result.value);
-
-      await Swal.fire({
-        title: "Cambios guardados",
-        icon: "success",
-        timer: 1200,
-        showConfirmButton: false,
-      });
-    } catch (error) {
-      console.error("Error al editar hijo:", error);
-
-      Swal.fire(
-        "Error",
-        "No se pudieron guardar los cambios. Revisá la conexión y los permisos de Firebase.",
-        "error"
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+  
 
   return (
     <main className="home-family">
@@ -353,9 +267,7 @@ function Home({
       onClick={handleAddResponsible}
       disabled={saving}
     >
-      <i className="fa-solid fa-user-plus"></i>
-      Agregar responsable
-    </button>
+      <i className="fa-solid fa-user-plus"></i> Responsable</button>
   )}
 </section>
 
@@ -434,9 +346,7 @@ function Home({
       onClick={handleAddChild}
       disabled={saving}
     >
-      <i className="fa-solid fa-user-plus"></i>
-      Agregar hijo/a
-    </button>
+      <i className="fa-solid fa-user-plus"></i> Hijo/a</button>
   )}
 </section>
 

@@ -591,6 +591,7 @@ const handleSelectResponsible = async (event) => {
     await updateDoc(ref, {
       nombre: data.nombre.trim(),
       fechaNacimiento: data.fechaNacimiento,
+      colegio: data.colegio,
     });
   };
 
@@ -1024,10 +1025,10 @@ if (activePage === "child-profile") {
   return (
     <div className="app">
       <ChildProfile
-        hijo={selectedChild}
+        hijo={hijos.find((hijo) => hijo.id === selectedChild?.id) || selectedChild}
         canEdit={canEdit}
         onBack={handleBackFromChild}
-        onEdit={editChildInDB}
+        onEditChild={editChildInDB}
       />
     </div>
   );
@@ -1051,11 +1052,13 @@ if (activePage === "child-profile") {
   <Agenda groupId={groupId} user={user} />
 </div> */}
 
+<h2 className="app-name">VINCULADOS</h2>
+
       <img src="logo.png" alt="Cuentas Claras" className="Create" />
  <p>{t("slogan")}</p>
    
 
-      <h1 className="group-title">{groupName}</h1>
+      {/* <h1 className="group-title">{groupName}</h1>
       <p className="group-code">
         <strong>{groupCode}</strong>
       </p>
@@ -1064,7 +1067,7 @@ if (activePage === "child-profile") {
           {t("administrador")}: <strong>{group.adminName}</strong>
           {isAdmin && " (vos)"}
         </p>
-      )}
+      )} */}
 
       <Home
   groupName={groupName}
