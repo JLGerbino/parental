@@ -484,11 +484,17 @@ border-left: 6px solid #269181;
   height: 42px;
   border: none;
   border-radius: 50%;
-  background: #269181;
-  color: white;
+  background: rgb(223, 223, 220);
+  color: #43ADB6;
   font-size: 19px;
   cursor: pointer;
 }
+
+.settings-button:hover{
+ background-color:rgb(223, 223, 220);
+ transform: scale(1.3);
+}
+
 
 .settings-container .settings-menu {
   position: absolute;
