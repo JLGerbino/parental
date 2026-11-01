@@ -397,3 +397,9 @@
 .agenda-event-past {
   opacity: 0.85;
 }
+
+.agenda-event-selected {
+  border: 2px solid #269181;
+  box-shadow: 0 0 0 4px rgba(38, 145, 129, 0.15);
+  transition: box-shadow 0.3s ease;
+}

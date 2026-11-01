@@ -20,7 +20,7 @@ function formatNotificationDate(timestamp) {
   }).format(timestamp.toDate());
 }
 
-export default function Notifications({ groupId, user, onUnreadCountChange }) {
+export default function Notifications({ groupId, user, onUnreadCountChange, onViewNotification }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -84,21 +84,42 @@ export default function Notifications({ groupId, user, onUnreadCountChange }) {
   }
 }, [unreadCount, onUnreadCountChange]);
 
-  async function markAsRead(notificationId) {
-    if (!user?.uid) return;
 
-    try {
+async function handleViewNotification(notification) {
+  if (!user?.uid) return;
+
+  try {
+    if (!(notification.readBy || []).includes(user.uid)) {
       await updateDoc(
-        doc(db, "groups", groupId, "notifications", notificationId),
+        doc(db, "groups", groupId, "notifications", notification.id),
         {
           readBy: arrayUnion(user.uid),
         }
       );
-    } catch (err) {
-      console.error("Error al marcar como leída:", err);
-      setError("No se pudo marcar la notificación como leída.");
     }
+
+    onViewNotification?.(notification.eventId);
+  } catch (err) {
+    console.error("Error al abrir la notificación:", err);
+    setError("No se pudo abrir la notificación.");
   }
+}
+
+  // async function markAsRead(notificationId) {
+  //   if (!user?.uid) return;
+
+  //   try {
+  //     await updateDoc(
+  //       doc(db, "groups", groupId, "notifications", notificationId),
+  //       {
+  //         readBy: arrayUnion(user.uid),
+  //       }
+  //     );
+  //   } catch (err) {
+  //     console.error("Error al marcar como leída:", err);
+  //     setError("No se pudo marcar la notificación como leída.");
+  //   }
+  // }
 
   async function deleteNotification(notification) {
   if (!user?.uid) return;
@@ -176,7 +197,15 @@ export default function Notifications({ groupId, user, onUnreadCountChange }) {
                   {formatNotificationDate(notification.createdAt)}
                 </small>
 
-                {!isRead && (
+                <button
+  type="button"
+  className="notification-read-button"
+  onClick={() => handleViewNotification(notification)}
+>
+  Ver
+</button>
+
+                {/* {!isRead && (
                   <button
                     type="button"
                     className="notification-read-button"
@@ -184,7 +213,7 @@ export default function Notifications({ groupId, user, onUnreadCountChange }) {
                   >
                     Marcar como leída
                   </button>
-                )}
+                )} */}
 
                 {(notification.readBy || []).includes(user?.uid) && (
   <button

@@ -459,7 +459,7 @@ function Test() {
     }
   }, [people]);
 
-  console.log("AddExpense group:", group);
+  //console.log("AddExpense group:", group);
 
   return (
     

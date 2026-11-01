@@ -59,9 +59,14 @@ function getLocalDateTimeMin() {
   return localDate.toISOString().slice(0, 16);
 }
 
-function AgendaEventCard({ event, onEdit, onDelete, isPast = false }) {
+function AgendaEventCard({ event, onEdit, onDelete, isPast = false, selectedEventId, }) {
   return (
-    <article className={`agenda-event ${isPast ? "agenda-event-past" : ""}`} key={event.id}>
+    <article
+  id={`agenda-event-${event.id}`}
+  className={`agenda-event ${isPast ? "agenda-event-past" : ""} ${
+    selectedEventId === event.id ? "agenda-event-selected" : ""
+  }`}
+>
       <div className="agenda-event-top">
         <span className="agenda-category">
           {event.category || "Otro"}
@@ -115,7 +120,7 @@ function AgendaEventCard({ event, onEdit, onDelete, isPast = false }) {
   );
 }
 
-export default function Agenda({ groupId, user, hijos = [], responsables = [], }) {
+export default function Agenda({ groupId, user, hijos = [], responsables = [], selectedEventId, }) {
   const [events, setEvents] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
@@ -138,18 +143,14 @@ const currentUserName =
       setLoading(false);
       return;
     }
-
     setLoading(true);
-
     const eventsRef = collection(
       db,
       "groups",
       groupId,
       "events"
     );
-
     const eventsQuery = query(eventsRef, orderBy("date", "asc"));
-
     const unsubscribe = onSnapshot(
       eventsQuery,
       (snapshot) => {
@@ -171,6 +172,29 @@ const currentUserName =
 
     return unsubscribe;
   }, [groupId]);
+
+
+  useEffect(() => {
+  if (loading || !selectedEventId) return;
+
+  const eventExists = events.some(
+    (event) => event.id === selectedEventId
+  );
+
+  if (!eventExists) return;
+
+  const element = document.getElementById(
+    `agenda-event-${selectedEventId}`
+  );
+
+  if (element) {
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+}, [loading, events, selectedEventId]);
+
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -410,6 +434,7 @@ const pastEvents = events.filter(
               event={event}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              selectedEventId={selectedEventId}
             />
           ))
         )}
@@ -429,76 +454,14 @@ const pastEvents = events.filter(
               event={event}
               onDelete={handleDelete}
               isPast
+              selectedEventId={selectedEventId}
             />
           ))
         )}
       </section>
     </>
   )}
-</div>
-    {/* <div className="agenda-list">
-      {loading ? (
-        <p>Cargando agenda...</p>
-      ) : events.length === 0 ? (
-        <div className="agenda-empty">
-          <span className="agenda-empty-icon">📅</span>
-          <p>Todavía no hay eventos en la agenda.</p>
-          <small>Agregá el primero usando el botón «Agregar evento».</small>
-        </div>
-      ) : (
-        events.map((event) => (
-          <article className="agenda-event" key={event.id}>
-            <div className="agenda-event-top">
-              <span className="agenda-category">
-                {event.category || "Otro"}
-              </span>
-
-              <span className="agenda-event-date">
-                {formatDate(event.date)}
-              </span>
-            </div>
-
-            <h4>{event.title}</h4>
-
-            <p className="agenda-event-child">
-              <strong>Hijo/a:</strong> {event.childName || "Todos"}
-            </p>
-
-            {event.location && (
-              <p className="agenda-event-detail">
-                <strong>Lugar:</strong> {event.location}
-              </p>
-            )}
-
-            {event.notes && (
-              <p className="agenda-event-notes">{event.notes}</p>
-            )}
-
-            <p className="agenda-event-author">
-              Cargado por {event.createdByName || "Integrante"}
-            </p>
-
-            <div className="agenda-event-actions">
-              <button
-                type="button"
-                className="agenda-button agenda-button-secondary"
-                onClick={() => handleEdit(event)}
-              >
-                Editar
-              </button>
-
-              <button
-                type="button"
-                className="agenda-button agenda-button-danger"
-                onClick={() => handleDelete(event)}
-              >
-                Eliminar
-              </button>
-            </div>
-          </article>
-        ))
-      )}
-    </div> */}
+</div>    
 
     {showForm && (
       <div

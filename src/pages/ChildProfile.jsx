@@ -124,10 +124,7 @@ function ChildProfile({ hijo, onBack, canEdit, onEdit, onEditChild }) {
 
   return (
     <main className="child-profile">
-      <button type="button" onClick={onBack}>
-        <i className="fa-solid fa-arrow-left"></i>
-        Volver
-      </button>
+      
 
       <h2>{hijo.nombre}</h2>
 
@@ -160,6 +157,11 @@ function ChildProfile({ hijo, onBack, canEdit, onEdit, onEditChild }) {
           </button>
         )}
       </section>
+
+      {/* <button type="button" onClick={onBack}>
+        <i className="fa-solid fa-arrow-left"></i>
+        Volver
+      </button> */}
     </main>
   );
 }

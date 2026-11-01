@@ -387,28 +387,6 @@ border-left: 6px solid #269181;
   animation: spin 0.8s linear infinite;
 }
 
-.settings-menu {
-  position: fixed;
-  bottom: 70px;
-  right: 10px;
-  background: #dee0e0;
-  border-radius: 12px;
-  padding: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  z-index: 1000;
-}
-
-.settings-menu div {
-  padding: 8px 12px;
-  cursor: pointer;
-  /* border-radius: 8px; */
-}
-
-.settings-menu div:hover {
-  background: rgba(0,0,0,0.1);
-  color: #283655;
-}
-
 .bottom-icon-inline {
   display: flex;
   flex-direction: row;
@@ -462,4 +440,111 @@ border-left: 6px solid #269181;
   opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.group-data-panel {
+  padding: 12px 16px;
+  margin: 4px 10px 10px;
+  background: #f1f3f3;
+  border-radius: 10px;
+  color: #283655;
+  font-size: 14px;
+}
+
+.group-data-panel p {
+  margin: 6px 0;
+}
+
+.group-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.group-code-row button {
+  border: none;
+  border-radius: 6px;
+  padding: 7px 10px;
+  background: #269181;
+  color: white;
+  cursor: pointer;
+}
+
+
+.settings-container {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1000;
+}
+
+.settings-button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: #269181;
+  color: white;
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.settings-container .settings-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 260px;
+  box-sizing: border-box;
+  padding: 12px;
+  background: #dee0e0;
+  color: #283655;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.20);
+  z-index: 1001;
+}
+
+.settings-container .settings-menu .bottom-icon {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings-container .settings-menu .bottom-icon:hover {
+  background: rgba(38, 145, 129, 0.12);
+  color: #283655;
+}
+
+.group-data-panel {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  margin: 5px 0 10px;
+  background: #f1f3f3;
+  border-radius: 10px;
+  color: #283655;
+  font-size: 14px;
+}
+
+.group-data-panel p {
+  margin: 6px 0;
+}
+
+.group-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.group-code-row button {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 10px;
+  background: #269181;
+  color: white;
+  cursor: pointer;
 }

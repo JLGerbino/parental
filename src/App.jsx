@@ -4,6 +4,8 @@ import Notifications from "./components/Notifications.jsx";
 import Chat from "./pages/Chat.jsx";
 import Home from "./pages/Home.jsx";
 import ChildProfile from "./pages/ChildProfile.jsx";
+import SettingsMenu from "./components/SettingsMenu";
+import BottomBar from "./components/BottomBar.jsx";
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
 import BalanceList from "./components/balanceList";
@@ -53,6 +55,7 @@ function App() {
   const [savingResponsible, setSavingResponsible] = useState(false);
   const [responsibleError, setResponsibleError] = useState("");
   const [selectedChild, setSelectedChild] = useState(null);
+  const [selectedAgendaEventId, setSelectedAgendaEventId] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -69,19 +72,13 @@ function App() {
   const bothResponsiblesLinked = responsables.length >= 2 && responsables.every((responsable) => !!responsable.linkedUid);
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
-  const [showLang, setShowLang] = useState(false);
-  const closeMenu = () => {setShowMenu(false); setShowLang(false);};
-  const toggleMenu = () => {
-  setShowMenu(prev => {
-    if (!prev) setShowLang(false); // 👈 resetea al abrir
-    return !prev;
-  });
-};
-
+  const closeMenu = () => {setShowMenu(false)};
+  //const toggleMenu = () => {setShowMenu(prev => {if (!prev) setShowLang(false); return !prev;});};
+  const toggleMenu = () => {setShowMenu(prev => !prev);};
   //para cerrar Settings
 useEffect(() => {
   setShowMenu(false);
-  setShowLang(false);
+  //setShowLang(false);
 }, [groupId]);
 
 const menuRef = useRef(null);
@@ -90,13 +87,13 @@ useEffect(() => {
   const handleClickOutside = (event) => {
     if (menuRef.current && !menuRef.current.contains(event.target)) {
       setShowMenu(false);
-      setShowLang(false);
+      //setShowLang(false);
     }
   };
   document.addEventListener("click", handleClickOutside);  
 
   return () => {
-     document.addEventListener("click", handleClickOutside);    
+     document.removeEventListener("click", handleClickOutside);    
   };
 }, []);
 
@@ -981,115 +978,76 @@ if (!responsableVinculado && responsables.length >= 2) {
   );
 }
 
-  
+const handleViewNotification = (eventId) => {
+  setSelectedAgendaEventId(eventId || null);
+  setActivePage("agenda");
+};
+
+
+let pageContent;
+
 if (activePage === "chat" && bothResponsiblesLinked) {
-  return (
-    <div className="app chat-screen">
-      <button
-        type="button"
-        className="chat-back-button"
-        onClick={() => setActivePage("home")}
-      >
-        <i className="fa-solid fa-arrow-left"></i>
-        {" "}Volver
-      </button>
-
-      <Chat
-  groupId={groupId}
-  user={user}
-  responsables={responsables}
-/>
-    </div>
+  pageContent = (
+    <Chat
+      groupId={groupId}
+      user={user}
+      responsables={responsables}
+    />
   );
-}
 
-if (activePage === "agenda" && bothResponsiblesLinked) {
-  return (
-    <div className="app">
-      <button
-        type="button"
-        className="chat-back-button"
-        onClick={() => setActivePage("home")}
-      >
-        <i className="fa-solid fa-arrow-left"></i>
-        {" "}Volver
-      </button>
-
-      <Agenda groupId={groupId} user={user} hijos={hijos} responsables={responsables}/>
-    </div>
+} else if (activePage === "agenda" && bothResponsiblesLinked) {
+  pageContent = (
+    <Agenda
+      groupId={groupId}
+      user={user}
+      hijos={hijos}
+      responsables={responsables}
+      selectedEventId={selectedAgendaEventId}
+    />
   );
-}
 
-
-if (activePage === "child-profile") {
-  return (
-    <div className="app">
-      <ChildProfile
-        hijo={hijos.find((hijo) => hijo.id === selectedChild?.id) || selectedChild}
-        canEdit={canEdit}
-        onBack={handleBackFromChild}
-        onEditChild={editChildInDB}
-      />
-    </div>
-  );
-}
-
-
-  return (
-    
-    <div className="app">
-    
-      <div style={{ position: "absolute", top: 10, right: 10 }}>
-        {/* <div style={{ marginBottom: "10px" }}>
-  <button onClick={() => changeLang("es")}>ES</button>
-  <button onClick={() => changeLang("en")}>EN</button>
-  <button onClick={() => changeLang("pt")}>PT</button>
-  <button onClick={() => changeLang("fr")}>FR</button></div> */}
-  {/* <LanguageSelector /> */}
-</div>
-     
-      {/* <div id="section-agenda">
-  <Agenda groupId={groupId} user={user} />
-</div> */}
-
-<h2 className="app-name">VINCULADOS</h2>
-
-      <img src="logo.png" alt="Cuentas Claras" className="Create" />
- <p>{t("slogan")}</p>
-   
-
-      {/* <h1 className="group-title">{groupName}</h1>
-      <p className="group-code">
-        <strong>{groupCode}</strong>
-      </p>
-      {group?.adminUid && (
-        <p className="admin-label">
-          {t("administrador")}: <strong>{group.adminName}</strong>
-          {isAdmin && " (vos)"}
-        </p>
-      )} */}
-
-      <Home
-  groupName={groupName}
-  responsables={responsables}
-  hijos={hijos}
-  canEdit={canEdit}
-  onAddResponsible={addResponsibleToDB}
-  onEditResponsible={editResponsibleInDB}
-  onAddChild={addChildToDB}
-  onEditChild={editChildInDB}
-  onOpenChild={handleOpenChild}
-/>
-
-   {bothResponsiblesLinked && (
-  <div id="section-notifications">
+} else if (activePage === "notifications" && bothResponsiblesLinked) {
+  pageContent = (
     <Notifications
       groupId={groupId}
       user={user}
       onUnreadCountChange={setUnreadNotifications}
+      onViewNotification={handleViewNotification}
     />
-  </div>
-)}  
+  );
+
+} else if (activePage === "child-profile") {
+  pageContent = (
+    <ChildProfile
+      hijo={hijos.find((hijo) => hijo.id === selectedChild?.id) || selectedChild}
+      canEdit={canEdit}
+      onBack={handleBackFromChild}
+      onEditChild={editChildInDB}
+    />
+  );
+
+} else {
+  pageContent = (
+    <>
+      <h2 className="app-name">VINCULADOS</h2>
+
+      <img src="logo.png" alt="Cuentas Claras" className="Create" />
+
+      <p>{t("slogan")}</p>
+
+      <Home
+        groupName={groupName}
+        responsables={responsables}
+        hijos={hijos}
+        canEdit={canEdit}
+        onAddResponsible={addResponsibleToDB}
+        onEditResponsible={editResponsibleInDB}
+        onAddChild={addChildToDB}
+        onEditChild={editChildInDB}
+        onOpenChild={handleOpenChild}
+      />
+
+      {/* Por ahora conservamos las funciones heredadas de gastos */}
 
       <AddPerson
         people={people}
@@ -1124,113 +1082,48 @@ if (activePage === "child-profile") {
         canEdit={canEdit}
         handleClearPayments={handleClearPayments}
       />
+    </>
+  );
+}
 
+return (
+  <div className="app">
 
-      {groupId && (
-        <div className="bottom-bar">
+    <div className="settings-container">
+      <button
+        type="button"
+        className="settings-button"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleMenu();
+        }}
+      >
+        <i className="fa-solid fa-gear"></i>
+      </button>
 
+      {showMenu && (
+        <SettingsMenu
+          menuRef={menuRef}
+          groupName={groupName}
+          groupCode={groupCode}
+          onExitGroup={exitGroup}
+          onDeleteGroup={handleDeleteGroup}
+        />
+      )}
+    </div>
 
-          <div className="bottom-icon" onClick={() => scrollToSection("section-people")}>
-            <i className="fa-solid fa-person-circle-plus"></i>
-            <small>{t("persona")}</small>
-          </div>
+    {pageContent}
 
-          <div className="bottom-icon" onClick={() => scrollToSection("section-expense")}>
-            <i className="fa-solid fa-circle-plus"></i>
-            <small>{t("gasto")}</small>
-          </div>
-
-          <div className="bottom-icon" onClick={() => scrollToSection("section-balance")}>
-            <i className="fa-solid fa-calculator"></i>
-            <small>{t("balance")}</small>
-          </div>
-
-          
-<div
-  className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""}`}
-  onClick={() => setActivePage("chat")}
->
-  <i className="fa-solid fa-comments"></i>
-  <small>Chat</small>
-
-  {unreadChat > 0 && (
-    <span className="notification-badge">
-      {unreadChat > 99 ? "99+" : unreadChat}
-    </span>
-  )}
-</div>
-
-
-        
-<div
-  className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""}`}
-  onClick={() => {
-    if (!bothResponsiblesLinked) return;
-    setActivePage("agenda");
-  }}
->
-  <i className="fa-solid fa-calendar-days"></i>
-  <small>Agenda</small>
-</div>
-
-
-<div
-  className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""}`}
-  onClick={() => scrollToSection("section-notifications")}
->
-  <i className="fa-solid fa-bell"></i>
-  <small>Avisos</small>
-
-  {unreadNotifications > 0 && (
-    <span className="notification-badge">
-      {unreadNotifications > 99 ? "99+" : unreadNotifications}
-    </span>
-  )}
-</div>
-
-          
-<div 
-  className="bottom-icon" onClick={(e) => {e.stopPropagation(); toggleMenu();}}>
-        
-  <i className="fa-solid fa-gear"></i>
-  <small>{t("mas")}</small>
-</div>
-{showMenu && (
-  <div className="settings-menu" ref={menuRef}>
-    
-{group?.adminUid && group.adminUid !== user?.uid && (
-            <div className="bottom-icon bottom-icon-inline" onClick={handleAdminPinLogin}>
-              <i className="fa-solid fa-crown"></i>
-              <small> {t("cambiarAdmin")}</small>
-            </div>
-          )}
-       <div className="bottom-icon bottom-icon-inline" onClick={exitGroup}>
-            <i className="fa-solid fa-house"></i>
-            <small> {t("salirGrupo")}</small>
-          </div>   
-    
-
-    <div className="bottom-icon bottom-icon-inline" onClick={handleDeleteGroup}>
-  <i className="fa-solid fa-trash-arrow-up"></i>
-  <small> {t("eliminarGrupo")}</small>
-</div>   
-
-<div className="bottom-icon bottom-icon-inline" onClick={() => setShowLang(!showLang)}>
-  <i className="fa-solid fa-comments"></i>
-  <small> {t("idioma")}</small>
-</div>
-
-{showLang && (
-  <LanguageSelector direction="vertical" />
-)}
-    
+    <BottomBar
+      activePage={activePage}
+      setActivePage={setActivePage}
+      bothResponsiblesLinked={bothResponsiblesLinked}
+      unreadChat={unreadChat}
+      unreadNotifications={unreadNotifications}
+    />
 
   </div>
-)}         
-        </div> 
-      )}      
-    </div>
-  );
+);
 
 }
 
