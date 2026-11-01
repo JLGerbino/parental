@@ -1049,7 +1049,7 @@ if (activePage === "chat" && bothResponsiblesLinked) {
 
       {/* Por ahora conservamos las funciones heredadas de gastos */}
 
-      <AddPerson
+      {/* <AddPerson
         people={people}
         addPersonToDB={addPersonToDB}
         deletePerson={deletePersonAndExpenses}
@@ -1081,7 +1081,7 @@ if (activePage === "chat" && bothResponsiblesLinked) {
         isAdminMode={isAdminMode}
         canEdit={canEdit}
         handleClearPayments={handleClearPayments}
-      />
+      /> */}
     </>
   );
 }
