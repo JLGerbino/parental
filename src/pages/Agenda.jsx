@@ -59,7 +59,43 @@ function getLocalDateTimeMin() {
   return localDate.toISOString().slice(0, 16);
 }
 
+function getTimeRemaining(value, currentTime) {
+  const difference = new Date(value).getTime() - currentTime;
+
+  if (difference <= 0) return null;
+
+  const minutes = Math.floor(difference / 60000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (days > 0) {
+    return `En ${days} ${days === 1 ? "día" : "días"}${
+      hours > 0 ? ` y ${hours} ${hours === 1 ? "hora" : "horas"}` : ""
+    }`;
+  }
+
+  if (hours > 0) {
+    return `En ${hours} ${hours === 1 ? "hora" : "horas"}`;
+  }
+
+  return `En ${Math.max(1, remainingMinutes)} ${
+    remainingMinutes === 1 ? "minuto" : "minutos"
+  }`;
+}
+
 function AgendaEventCard({ event, onEdit, onDelete, isPast = false, selectedEventId, }) {
+
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentTime(Date.now());
+  }, 60000);
+
+  return () => clearInterval(interval);
+}, []);
+
   return (
     <article
   id={`agenda-event-${event.id}`}
@@ -78,6 +114,19 @@ function AgendaEventCard({ event, onEdit, onDelete, isPast = false, selectedEven
       </div>
 
       <h4>{event.title}</h4>
+
+      {!isPast && (
+  <p
+  className={`agenda-event-countdown ${
+    new Date(event.date).getTime() - currentTime <= 24 * 60 * 60 * 1000
+      ? "agenda-event-countdown-urgent"
+      : ""
+  }`}
+>
+    <i className="fa-regular fa-clock"></i>{" "}
+    {getTimeRemaining(event.date, currentTime)}
+  </p>
+)}
 
       <p className="agenda-event-child">
         <strong>Hijo/a:</strong> {event.childName || "Todos"}
@@ -128,6 +177,8 @@ export default function Agenda({ groupId, user, hijos = [], responsables = [], s
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showPastEvents, setShowPastEvents] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const currentResponsible = responsables.find(
   (responsable) => responsable.linkedUid === user?.uid
 );
@@ -136,6 +187,14 @@ const currentUserName =
   currentResponsible?.nombre ||
   user?.displayName ||
   "Integrante";
+
+  useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentTime(Date.now());
+  }, 60000);
+
+  return () => clearInterval(interval);
+}, []);
 
   useEffect(() => {
     if (!groupId) {
@@ -174,14 +233,24 @@ const currentUserName =
   }, [groupId]);
 
 
-  useEffect(() => {
+ // Cambiar de vista según si el evento seleccionado ya pasó
+useEffect(() => {
   if (loading || !selectedEventId) return;
 
-  const eventExists = events.some(
+  const selectedEvent = events.find(
     (event) => event.id === selectedEventId
   );
 
-  if (!eventExists) return;
+  if (!selectedEvent) return;
+
+  const isPast = new Date(selectedEvent.date).getTime() < currentTime;
+
+  setShowPastEvents(isPast);
+}, [loading, events, selectedEventId, currentTime]);
+
+// Desplazarse hasta el evento seleccionado
+useEffect(() => {
+  if (loading || !selectedEventId) return;
 
   const element = document.getElementById(
     `agenda-event-${selectedEventId}`
@@ -193,7 +262,8 @@ const currentUserName =
       block: "center",
     });
   }
-}, [loading, events, selectedEventId]);
+}, [loading, events, selectedEventId, showPastEvents]);
+
 
 
   function handleChange(e) {
@@ -366,7 +436,7 @@ await addDoc(
 }
 
   
-const now = new Date();
+const now = new Date(currentTime);
 
 const upcomingEvents = events.filter(
   (event) => new Date(event.date) >= now
@@ -416,52 +486,72 @@ const pastEvents = events.filter(
     <div className="agenda-empty">
       <span className="agenda-empty-icon">📅</span>
       <p>Todavía no hay eventos en la agenda.</p>
-      <small>Agregá el primero usando el botón «Agregar evento».</small>
+      <small>
+        Agregá el primero usando el botón «Agregar evento».
+      </small>
     </div>
+  ) : showPastEvents ? (
+    <section className="agenda-section agenda-past-section">
+      <h3>Eventos pasados</h3>
+
+      {pastEvents.length === 0 ? (
+        <p className="agenda-section-empty">
+          Todavía no hay eventos pasados.
+        </p>
+      ) : (
+        pastEvents.map((event) => (
+          <AgendaEventCard
+            key={event.id}
+            event={event}
+            onDelete={handleDelete}
+            isPast
+            selectedEventId={selectedEventId}
+          />
+        ))
+      )}
+
+      <button
+        type="button"
+        className="agenda-button agenda-button-secondary"
+        onClick={() => setShowPastEvents(false)}
+      >
+        <i className="fa-solid fa-arrow-left"></i>
+        Volver a la agenda
+      </button>
+    </section>
   ) : (
-    <>
-      <section className="agenda-section">
-        <h3>Próximos eventos</h3>
+    <section className="agenda-section">
+      <h3>Próximos eventos</h3>
 
-        {upcomingEvents.length === 0 ? (
-          <p className="agenda-section-empty">
-            No hay próximos eventos.
-          </p>
-        ) : (
-          upcomingEvents.map((event) => (
-            <AgendaEventCard
-              key={event.id}
-              event={event}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              selectedEventId={selectedEventId}
-            />
-          ))
-        )}
-      </section>
+      {upcomingEvents.length === 0 ? (
+        <p className="agenda-section-empty">
+          No hay próximos eventos.
+        </p>
+      ) : (
+        upcomingEvents.map((event) => (
+          <AgendaEventCard
+            key={event.id}
+            event={event}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            selectedEventId={selectedEventId}
+          />
+        ))
+      )}
 
-      <section className="agenda-section agenda-past-section">
-        <h3>Eventos pasados</h3>
-
-        {pastEvents.length === 0 ? (
-          <p className="agenda-section-empty">
-            Todavía no hay eventos pasados.
-          </p>
-        ) : (
-          pastEvents.map((event) => (
-            <AgendaEventCard
-              key={event.id}
-              event={event}
-              onDelete={handleDelete}
-              isPast
-              selectedEventId={selectedEventId}
-            />
-          ))
-        )}
-      </section>
-    </>
+      {pastEvents.length > 0 && (
+        <button
+          type="button"
+          className="agenda-button agenda-button-secondary"
+          onClick={() => setShowPastEvents(true)}
+        >
+          <i className="fa-solid fa-clock-rotate-left"></i>
+          Ver eventos pasados ({pastEvents.length})
+        </button>
+      )}
+    </section>
   )}
-</div>    
+</div>
 
     {showForm && (
       <div

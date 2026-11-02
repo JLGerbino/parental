@@ -554,3 +554,7 @@ border-left: 6px solid #269181;
   color: white;
   cursor: pointer;
 }
+
+.agenda-section > .agenda-button {
+  margin-top: 18px;
+}

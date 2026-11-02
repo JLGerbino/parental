@@ -56,6 +56,7 @@ function App() {
   const [responsibleError, setResponsibleError] = useState("");
   const [selectedChild, setSelectedChild] = useState(null);
   const [selectedAgendaEventId, setSelectedAgendaEventId] = useState(null);
+  const [upcomingAgendaCount, setUpcomingAgendaCount] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -793,13 +794,12 @@ const handleSelectResponsible = async (event) => {
     });
   };
 
-  
+//escucha los avisos del chat 
 useEffect(() => {
   if (!groupId || !user?.uid) {
     setUnreadChat(0);
     return;
   }
-
   const messagesRef = collection(db, "groups", groupId, "messages");
   const profileRef = doc(
     db,
@@ -808,26 +808,20 @@ useEffect(() => {
     "chatProfiles",
     user.uid
   );
-
   let messages = [];
   let lastReadMillis = 0;
-
   const updateUnreadCount = () => {
     if (activePage === "chat") {
       setUnreadChat(0);
       return;
     }
-
     const unread = messages.filter((item) => {
       if (item.senderUid === user.uid) return false;
-
       const createdAt = item.createdAt?.toMillis?.();
       return createdAt && createdAt > lastReadMillis;
     }).length;
-
     setUnreadChat(unread);
   };
-
   const unsubscribeMessages = onSnapshot(
     query(messagesRef, orderBy("createdAt", "asc")),
     (snapshot) => {
@@ -835,28 +829,117 @@ useEffect(() => {
         id: item.id,
         ...item.data(),
       }));
-
       updateUnreadCount();
     },
     (error) => console.error("Error al contar mensajes:", error)
   );
-
   const unsubscribeProfile = onSnapshot(
     profileRef,
     (snapshot) => {
       lastReadMillis =
         snapshot.data()?.lastReadAt?.toMillis?.() || 0;
-
       updateUnreadCount();
     },
     (error) => console.error("Error al leer el perfil del chat:", error)
   );
-
   return () => {
     unsubscribeMessages();
     unsubscribeProfile();
   };
 }, [groupId, user?.uid, activePage]);
+
+// Contar notificaciones pendientes en tiempo real
+useEffect(() => {
+  if (!groupId || !user?.uid) {
+    setUnreadNotifications(0);
+    return;
+  }
+
+  const notificationsRef = collection(
+    db,
+    "groups",
+    groupId,
+    "notifications"
+  );
+
+  const unsubscribe = onSnapshot(
+    notificationsRef,
+    (snapshot) => {
+      const unread = snapshot.docs.filter((item) => {
+        const notification = item.data();
+
+        // No contar las notificaciones propias
+        if (notification.actorUid === user.uid) return false;
+
+        // No contar las eliminadas por este usuario
+        if ((notification.deletedBy || []).includes(user.uid)) {
+          return false;
+        }
+
+        // Contar solamente las que todavía no fueron leídas
+        return !(notification.readBy || []).includes(user.uid);
+      }).length;
+
+      setUnreadNotifications(unread);
+    },
+    (error) => {
+      console.error("Error al contar notificaciones:", error);
+    }
+  );
+
+  return unsubscribe;
+}, [groupId, user?.uid]);
+
+
+// Contar eventos de las próximas 24 horas
+useEffect(() => {
+  if (!groupId) {
+    setUpcomingAgendaCount(0);
+    return;
+  }
+
+  const eventsRef = collection(db, "groups", groupId, "events");
+
+  let events = [];
+
+  const updateUpcomingCount = () => {
+    const now = new Date().getTime();
+    const next24Hours = now + 24 * 60 * 60 * 1000;
+
+    const count = events.filter((event) => {
+      const eventTime = new Date(event.date).getTime();
+
+      return (
+        !Number.isNaN(eventTime) &&
+        eventTime >= now &&
+        eventTime <= next24Hours
+      );
+    }).length;
+
+    setUpcomingAgendaCount(count);
+  };
+
+  const unsubscribe = onSnapshot(
+    eventsRef,
+    (snapshot) => {
+      events = snapshot.docs.map((item) => item.data());
+      updateUpcomingCount();
+    },
+    (error) => {
+      console.error("Error al contar eventos próximos:", error);
+    }
+  );
+
+  // Actualizar el contador cada minuto
+  const interval = setInterval(updateUpcomingCount, 60000);
+
+  return () => {
+    unsubscribe();
+    clearInterval(interval);
+  };
+}, [groupId]);
+
+
 
 const handleOpenChild = (hijo) => {
   setSelectedChild(hijo);
@@ -1120,6 +1203,7 @@ return (
       bothResponsiblesLinked={bothResponsiblesLinked}
       unreadChat={unreadChat}
       unreadNotifications={unreadNotifications}
+      upcomingAgendaCount={upcomingAgendaCount}
     />
 
   </div>

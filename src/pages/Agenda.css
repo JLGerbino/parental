@@ -403,3 +403,14 @@
   box-shadow: 0 0 0 4px rgba(38, 145, 129, 0.15);
   transition: box-shadow 0.3s ease;
 }
+
+.agenda-event-countdown {
+  color: #269181;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 6px 0 10px;
+}
+
+.agenda-event-countdown-urgent {
+  color: #dc3545;
+}

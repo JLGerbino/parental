@@ -5,6 +5,7 @@ const BottomBar = ({
   bothResponsiblesLinked,
   unreadChat,
   unreadNotifications,
+  upcomingAgendaCount,
 }) => {
   const navigate = (page) => {
     if (!bothResponsiblesLinked && page !== "home") return;
@@ -23,12 +24,18 @@ const BottomBar = ({
       </div>
 
       <div
-        className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""} ${activePage === "agenda" ? "active" : ""}`}
-        onClick={() => navigate("agenda")}
-      >
-        <i className="fa-solid fa-calendar-days"></i>
-        <small>Agenda</small>
-      </div>
+  className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""} ${activePage === "agenda" ? "active" : ""}`}
+  onClick={() => navigate("agenda")}
+>
+  <i className="fa-solid fa-calendar-days"></i>
+  <small>Agenda</small>
+
+  {upcomingAgendaCount > 0 && (
+    <span className="notification-badge">
+      {upcomingAgendaCount > 99 ? "99+" : upcomingAgendaCount}
+    </span>
+  )}
+</div>
 
       <div
         className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""} ${activePage === "notifications" ? "active" : ""}`}
