@@ -114,43 +114,76 @@ const Convivencia = ({
     return index === 0 ? "#4389CE" : "#269181";
   };
 
-  const validateWeek = (week) => {
-    for (let i = 0; i < week.days.length; i++) {
-      const periods = week.days[i].periods;
+  
 
-      if (periods.length === 0) {
-        return `Todavía falta configurar el ${days[i].toLowerCase()}.`;
+
+const validateWeek = (week) => {
+  const errors = [];
+
+  for (let i = 0; i < week.days.length; i++) {
+    const periods = week.days[i].periods;
+    const dayName = days[i].toLowerCase();
+
+    if (periods.length === 0) {
+      errors.push(`Falta configurar el ${dayName}.`);
+      continue;
+    }
+
+    let hasIncompletePeriod = false;
+
+    for (const period of periods) {
+      if (!period.start || !period.end || !period.responsibleId) {
+        errors.push(`Hay un tramo incompleto el ${dayName}.`);
+        hasIncompletePeriod = true;
+        break;
       }
 
-      for (let j = 0; j < periods.length; j++) {
-        const period = periods[j];
-
-        if (!period.start || !period.end || !period.responsibleId) {
-          return `Completá los horarios y el responsable del ${days[i].toLowerCase()}.`;
-        }
-
-        if (period.end <= period.start) {
-          return `El horario de finalización debe ser posterior al de inicio en ${days[i].toLowerCase()}.`;
-        }
-      }
-
-      const ordered = [...periods].sort((a, b) =>
-        a.start.localeCompare(b.start)
-      );
-
-      for (let j = 1; j < ordered.length; j++) {
-        if (ordered[j].start < ordered[j - 1].end) {
-          return `Hay horarios superpuestos el ${days[i].toLowerCase()}.`;
-        }
+      if (period.end <= period.start) {
+        errors.push(`El horario de finalización debe ser posterior al inicio el ${dayName}.`);
+        hasIncompletePeriod = true;
+        break;
       }
     }
 
-    return "";
-  };
+    if (hasIncompletePeriod) continue;
+
+    const ordered = [...periods].sort((a, b) =>
+      a.start.localeCompare(b.start)
+    );
+
+    if (ordered[0].start !== "00:00") {
+      errors.push(`El ${dayName} debe comenzar a las 00:00.`);
+    }
+
+    for (let j = 1; j < ordered.length; j++) {
+      if (ordered[j].start > ordered[j - 1].end) {
+        errors.push(
+          `El ${dayName} tiene un horario sin asignar: de ${ordered[j - 1].end} a ${ordered[j].start}.`
+        );
+      }
+
+      if (ordered[j].start < ordered[j - 1].end) {
+        errors.push(`Hay horarios superpuestos el ${dayName}.`);
+      }
+    }
+
+    const lastPeriod = ordered[ordered.length - 1];
+
+    if (lastPeriod.end !== "24:00") {
+      errors.push(
+        `El ${dayName} queda sin asignar desde las ${lastPeriod.end} hasta las 24:00.`
+      );
+    }
+  }
+
+  return errors.join("\n");
+};
+
+
+
 
   const createFourWeeks = () => {
-    const validationError = validateWeek(weeks[0]);
-
+    const validationError = validateWeek(weeks[0]);   
     if (validationError) {
       setError(validationError);
       return;
