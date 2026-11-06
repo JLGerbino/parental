@@ -6,6 +6,7 @@ import Home from "./pages/Home.jsx";
 import ChildProfile from "./pages/ChildProfile.jsx";
 import SettingsMenu from "./components/SettingsMenu";
 import BottomBar from "./components/BottomBar.jsx";
+import Convivencia from "./pages/Convivencia.jsx";
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
 import BalanceList from "./components/balanceList";
@@ -1086,6 +1087,17 @@ if (activePage === "chat" && bothResponsiblesLinked) {
       hijos={hijos}
       responsables={responsables}
       selectedEventId={selectedAgendaEventId}
+    />
+  );
+
+  } else if (activePage === "convivencia" && bothResponsiblesLinked) {
+  pageContent = (
+    <Convivencia
+      groupId={groupId}
+      user={user}
+      hijos={hijos}
+      responsables={responsables}
+      responsableVinculado={responsableVinculado}
     />
   );
 

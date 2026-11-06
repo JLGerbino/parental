@@ -492,7 +492,7 @@ const pastEvents = events.filter(
     </div>
   ) : showPastEvents ? (
     <section className="agenda-section agenda-past-section">
-      <h3>Eventos pasados</h3>
+      <h3 className="pasados">Eventos pasados</h3>
 
       {pastEvents.length === 0 ? (
         <p className="agenda-section-empty">
