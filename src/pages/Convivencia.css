@@ -332,3 +332,115 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+
+/* MODAL DE CONFIGURACIÓN DEL DÍA */
+
+.convivencia-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(25, 35, 48, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.convivencia-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.convivencia-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.convivencia-modal-header h3 {
+  color: #283655;
+  margin: 0 0 4px;
+}
+
+.convivencia-modal-header span {
+  color: #777;
+  font-size: 13px;
+}
+
+.convivencia-modal-header button {
+  border: none;
+  background: #f0f2f4;
+  color: #586574;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.convivencia-modal > p {
+  color: #666;
+  font-size: 14px;
+}
+
+.convivencia-modal-periods {
+  margin-top: 12px;
+}
+
+.convivencia-modal-error {
+  white-space: pre-line;
+  margin-top: 15px;
+}
+
+.convivencia-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.convivencia-modal-actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.convivencia-cancel-button {
+  background: #edf0f2;
+  color: #52606d;
+}
+
+.convivencia-save-button {
+  background: #269181;
+  color: white;
+  min-width: 100px;
+}
+
+@media (max-width: 480px) {
+  .convivencia-modal-overlay {
+    padding: 10px;
+    align-items: center;
+  }
+
+  .convivencia-modal {
+    padding: 17px;
+    max-height: 92vh;
+  }
+
+  .convivencia-modal-actions button {
+    flex: 1;
+  }
+}
