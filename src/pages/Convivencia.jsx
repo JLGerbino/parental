@@ -9,6 +9,8 @@ import {
   query,
   where,
   orderBy,
+  doc,
+  runTransaction,
 } from "firebase/firestore";
 
 
@@ -156,28 +158,32 @@ const Convivencia = ({
   const [proposals, setProposals] = useState([]);
   const [loadingProposals, setLoadingProposals] = useState(true);
   const [selectedProposal, setSelectedProposal] = useState(null);
+  const [decidingProposal, setDecidingProposal] = useState(false);
+  const [decisionError, setDecisionError] = useState("");
+  const [currentRegime, setCurrentRegime] = useState(null);
+  const [loadingRegime, setLoadingRegime] = useState(true);
+  const [selectedRegimeDay, setSelectedRegimeDay] = useState(null);
+  const [activeRegimeWeek, setActiveRegimeWeek] = useState(1);
 
   const currentWeek = weeks.find((week) => week.id === activeWeek);
+  const currentRegimeWeek = currentRegime?.weeks?.find((week) => week.id === activeRegimeWeek);
 
   useEffect(() => {
   if (!groupId || !user?.uid || !responsableVinculado?.id) {
     setLoadingProposals(false);
     return;
   }
-
   const proposalsRef = collection(
     db,
     "groups",
     groupId,
     "scheduleProposals"
   );
-
   const proposalsQuery = query(
     proposalsRef,
     where("status", "==", "pending"),
     orderBy("createdAt", "desc")
   );
-
   const unsubscribe = onSnapshot(
     proposalsQuery,
     (snapshot) => {
@@ -199,6 +205,40 @@ const Convivencia = ({
     }
   );
 
+  return () => unsubscribe();
+}, [groupId, user?.uid, responsableVinculado?.id]);
+
+
+useEffect(() => {
+  if (!groupId || !user?.uid || !responsableVinculado?.id) {
+    setLoadingRegime(false);
+    return;
+  }
+  const regimeRef = doc(
+    db,
+    "groups",
+    groupId,
+    "regimes",
+    "current"
+  );
+  const unsubscribe = onSnapshot(
+    regimeRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        setCurrentRegime({
+          id: snapshot.id,
+          ...snapshot.data(),
+        });
+      } else {
+        setCurrentRegime(null);
+      }
+      setLoadingRegime(false);
+    },
+    (err) => {
+      console.error("Error al cargar el régimen vigente:", err);
+      setLoadingRegime(false);
+    }
+  );
   return () => unsubscribe();
 }, [groupId, user?.uid, responsableVinculado?.id]);
 
@@ -372,6 +412,92 @@ const Convivencia = ({
     setError("Esta semana está completa.");
   };
 
+
+    const handleProposalDecision = async (decision) => {
+    if (!selectedProposal || decidingProposal) return;
+
+    if (decision !== "approved" && decision !== "rejected") return;
+
+    if (selectedProposal.createdByUid === user.uid) {
+      setDecisionError("No podés decidir sobre una propuesta que enviaste.");
+      return;
+    }
+
+    setDecidingProposal(true);
+    setDecisionError("");
+
+    const proposalRef = doc(
+      db,
+      "groups",
+      groupId,
+      "scheduleProposals",
+      selectedProposal.id
+    );
+
+    const regimeRef = doc(
+      db,
+      "groups",
+      groupId,
+      "regimes",
+      "current"
+    );
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const proposalSnapshot = await transaction.get(proposalRef);
+
+        if (!proposalSnapshot.exists()) {
+          throw new Error("La propuesta ya no existe.");
+        }
+
+        const proposal = proposalSnapshot.data();
+
+        if (proposal.status !== "pending") {
+          throw new Error("Esta propuesta ya fue resuelta.");
+        }
+
+        if (proposal.createdByUid === user.uid) {
+          throw new Error("No podés decidir sobre tu propia propuesta.");
+        }
+
+        if (decision === "approved") {
+          transaction.set(regimeRef, {
+            proposalId: selectedProposal.id,
+            approvedByUid: user.uid,
+            approvedByResponsibleId: responsableVinculado.id,
+            createdByUid: proposal.createdByUid,
+            startDate: proposal.startDate,
+            endDate: proposal.endDate,
+            childIds: proposal.childIds,
+            weeks: proposal.weeks,
+            updatedAt: serverTimestamp(),
+          });
+        }
+
+        transaction.update(proposalRef, {
+          status: decision,
+          decidedByUid: user.uid,
+          decidedAt: serverTimestamp(),
+        });
+      });
+
+      setSelectedProposal(null);
+      setDecisionError("");
+    } catch (err) {
+      console.error("Error al resolver la propuesta:", err);
+      setDecisionError(
+        err.message === "Esta propuesta ya fue resuelta."
+          ? err.message
+          : "No se pudo registrar la decisión. Revisá tu conexión e intentá nuevamente."
+      );
+    } finally {
+      setDecidingProposal(false);
+    }
+  };
+
+
+
+
   const closeSchedule = async () => {
   if (saving || scheduleClosed) return;
 
@@ -441,6 +567,251 @@ const Convivencia = ({
   return (
     <div className="convivencia-container">
 
+
+<div className="convivencia-form">
+  <h3>Régimen vigente</h3>
+
+  {loadingRegime ? (
+    <p>Cargando régimen vigente...</p>
+  ) : currentRegime ? (
+    <>
+      <p className="convivencia-help">
+        Período: {formatDate(currentRegime.startDate)} al{" "}
+        {formatDate(currentRegime.endDate)}
+      </p>
+
+      <div className="convivencia-children">
+        <strong>Hijos incluidos</strong>
+        <p>
+          {currentRegime.childIds
+            .map(
+              (childId) =>
+                hijos.find((hijo) => hijo.id === childId)?.nombre ||
+                "Hijo"
+            )
+            .join(", ")}
+        </p>
+      </div>
+
+      <p className="convivencia-help">
+        Propuesta aprobada por:{" "}
+        {responsables.find(
+          (item) => item.id === currentRegime.approvedByResponsibleId
+        )?.nombre || "Responsable"}
+      </p>
+
+      <div className="convivencia-week-tabs">
+  {currentRegime.weeks.map((week) => (
+    <button
+      type="button"
+      key={week.id}
+      className={activeRegimeWeek === week.id ? "active" : ""}
+      onClick={() => {
+        setActiveRegimeWeek(week.id);
+        setSelectedRegimeDay(null);
+      }}
+    >
+      Semana {week.id}
+    </button>
+  ))}
+</div>
+
+{currentRegimeWeek && (
+  <>
+    <div className="convivencia-week-heading">
+      <h3>Semana {activeRegimeWeek}</h3>
+      <span>
+        {formatDate(currentRegimeWeek.startDate)}
+        {" al "}
+        {formatDate(
+          currentRegimeWeek.days
+            .filter(
+              (day) =>
+                day.date >= currentRegime.startDate &&
+                day.date <= currentRegime.endDate
+            )
+            .slice(-1)[0]?.date || currentRegimeWeek.startDate
+        )}
+      </span>
+    </div>
+
+    <p className="convivencia-help">
+      Seleccioná un día para consultar los horarios asignados.
+    </p>
+
+    <div className="convivencia-days-grid">
+      {currentRegimeWeek.days
+        .filter(
+          (day) =>
+            day.date >= currentRegime.startDate &&
+            day.date <= currentRegime.endDate
+        )
+        .map((day) => {
+          const colors = getDayColors(day);
+          const date = getDateFromString(day.date);
+
+          return (
+            <button
+              type="button"
+              key={day.date}
+              className="convivencia-day"
+              onClick={() => setSelectedRegimeDay(day)}
+            >
+              <strong>{getDayName(day.date).slice(0, 3)}</strong>
+
+              <small>
+                {date.getDate()}/{date.getMonth() + 1}
+              </small>
+
+              <div className="convivencia-day-colors">
+                {colors.map((color, index) => (
+                  <span
+                    key={index}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+
+              <small>
+                {day.periods.length} tramo(s)
+              </small>
+            </button>
+          );
+        })}
+    </div>
+  </>
+)}
+
+      {/* {currentRegime.weeks.map((week) => (
+        <div
+          key={week.id}
+          className="convivencia-proposal-week"
+        >
+          <h4>
+            Semana {week.id} — {formatDate(week.startDate)}
+          </h4>
+
+          {week.days
+            .filter(
+              (day) =>
+                day.date >= currentRegime.startDate &&
+                day.date <= currentRegime.endDate
+            )
+            .map((day) => (
+              <div
+                key={day.date}
+                className="convivencia-proposal-day"
+              >
+                <strong>
+                  {getDayName(day.date)} {formatDate(day.date)}
+                </strong>
+
+                {day.periods.map((period, index) => {
+                  const responsible = responsables.find(
+                    (item) => item.id === period.responsibleId
+                  );
+
+                  return (
+                    <p
+                      key={index}
+                      style={{
+                        borderLeft: `4px solid ${getResponsibleColor(
+                          period.responsibleId
+                        )}`,
+                        paddingLeft: "8px",
+                      }}
+                    >
+                      {period.start} a {period.end} —{" "}
+                      {responsible?.nombre || "Responsable no identificado"}
+                    </p>
+                  );
+                })}
+              </div>
+            ))}
+        </div>
+      ))} */}
+    </>
+  ) : (
+    <p className="convivencia-help">
+      Todavía no hay un régimen de convivencia aprobado.
+    </p>
+  )}
+</div>
+      
+{selectedRegimeDay && (
+  <div className="convivencia-modal-overlay">
+    <div
+      className="convivencia-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="regime-day-title"
+    >
+      <div className="convivencia-modal-header">
+        <div>
+          <h3 id="regime-day-title">
+            {getDayName(selectedRegimeDay.date)}{" "}
+            {formatDate(selectedRegimeDay.date)}
+          </h3>
+          <span>Régimen aprobado · Solo consulta</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSelectedRegimeDay(null)}
+          aria-label="Cerrar"
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <h4>Distribución de horarios</h4>
+
+      {selectedRegimeDay.periods
+        .slice()
+        .sort((a, b) => a.start.localeCompare(b.start))
+        .map((period, index) => {
+          const responsible = responsables.find(
+            (item) => item.id === period.responsibleId
+          );
+
+          return (
+            <div
+              key={index}
+              className="convivencia-period"
+              style={{
+                borderLeft: `4px solid ${getResponsibleColor(
+                  period.responsibleId
+                )}`,
+                paddingLeft: "12px",
+                marginBottom: "12px",
+              }}
+            >
+              <strong>
+                {period.start} a {period.end}
+              </strong>
+
+              <p>
+                {responsible?.nombre || "Responsable no identificado"}
+              </p>
+            </div>
+          );
+        })}
+
+      <div className="convivencia-modal-actions">
+        <button
+          type="button"
+          className="convivencia-cancel-button"
+          onClick={() => setSelectedRegimeDay(null)}
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
       {loadingProposals ? (
   <p>Cargando propuestas...</p>
 ) : proposals.length > 0 ? (
@@ -475,6 +846,93 @@ const Convivencia = ({
     })}
   </div>
 ) : null}
+
+
+{selectedProposal && (
+  <div className="convivencia-form">
+    <h3>Revisión de propuesta</h3>
+
+    <p>
+      <strong>Período:</strong>{" "}
+      {formatDate(selectedProposal.startDate)} al{" "}
+      {formatDate(selectedProposal.endDate)}
+    </p>
+
+    <p>
+      <strong>Hijos incluidos:</strong>{" "}
+      {selectedProposal.childIds
+        .map((childId) =>
+          hijos.find((hijo) => hijo.id === childId)?.nombre || "Hijo"
+        )
+        .join(", ")}
+    </p>
+
+    {selectedProposal.weeks.map((week) => (
+      <div key={week.id} className="convivencia-proposal-week">
+        <h4>
+          Semana {week.id} — {formatDate(week.startDate)}
+        </h4>
+
+        {week.days
+          .filter((day) => day.date >= selectedProposal.startDate &&
+            day.date <= selectedProposal.endDate)
+          .map((day) => (
+            <div key={day.date} className="convivencia-proposal-day">
+              <strong>
+                {getDayName(day.date)} {formatDate(day.date)}
+              </strong>
+
+              {day.periods.map((period, index) => {
+                const responsible = responsables.find(
+                  (item) => item.id === period.responsibleId
+                );
+
+                return (
+                  <p key={index}>
+                    {period.start} a {period.end} —{" "}
+                    {responsible?.nombre || "Responsable no identificado"}
+                  </p>
+                );
+              })}
+            </div>
+          ))}
+      </div>
+    ))}
+
+        {decisionError && (
+      <p className="convivencia-error">{decisionError}</p>
+    )}
+
+    <div className="convivencia-modal-actions">
+      <button
+        type="button"
+        className="convivencia-cancel-button"
+        disabled={decidingProposal}
+        onClick={() => handleProposalDecision("rejected")}
+      >
+        {decidingProposal ? "Procesando..." : "Rechazar propuesta"}
+      </button>
+
+      <button
+        type="button"
+        className="convivencia-save-button"
+        disabled={decidingProposal}
+        onClick={() => handleProposalDecision("approved")}
+      >
+        {decidingProposal ? "Procesando..." : "Aceptar propuesta"}
+      </button>
+    </div>
+
+    <button
+      type="button"
+      className="convivencia-cancel-button"
+      disabled={decidingProposal}
+      onClick={() => setSelectedProposal(null)}
+    >
+      Cerrar revisión
+    </button>
+  </div>
+)}
 
 
       <h2>Régimen de convivencia</h2>
