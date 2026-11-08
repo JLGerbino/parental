@@ -164,6 +164,7 @@ const Convivencia = ({
   const [loadingRegime, setLoadingRegime] = useState(true);
   const [selectedRegimeDay, setSelectedRegimeDay] = useState(null);
   const [activeRegimeWeek, setActiveRegimeWeek] = useState(1);
+  const [selectedProposalDay, setSelectedProposalDay] = useState(null);
 
   const currentWeek = weeks.find((week) => week.id === activeWeek);
   const currentRegimeWeek = currentRegime?.weeks?.find((week) => week.id === activeRegimeWeek);
@@ -866,8 +867,46 @@ useEffect(() => {
         )
         .join(", ")}
     </p>
-
     {selectedProposal.weeks.map((week) => (
+  <div key={week.id} className="convivencia-proposal-week">
+    <h4>
+      Semana {week.id} — {formatDate(week.startDate)}
+    </h4>
+
+    <div className="convivencia-days-grid">
+      {week.days
+        .filter(
+          (day) =>
+            day.date >= selectedProposal.startDate &&
+            day.date <= selectedProposal.endDate
+        )
+        .map((day) => (
+          <button
+            key={day.date}
+            type="button"
+            className="convivencia-day"
+            onClick={() => setSelectedProposalDay(day)}
+          >
+            <strong>{getDayName(day.date).slice(0, 3)}</strong>
+
+            <span>{day.date.split("-")[2]}</span>
+
+            <div className="convivencia-day-colors">
+              {getDayColors(day).map((color, index) => (
+                <span
+                  key={index}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </button>
+        ))}
+    </div>
+  </div>
+))}
+
+
+    {/* {selectedProposal.weeks.map((week) => (
       <div key={week.id} className="convivencia-proposal-week">
         <h4>
           Semana {week.id} — {formatDate(week.startDate)}
@@ -895,9 +934,9 @@ useEffect(() => {
                 );
               })}
             </div>
-          ))}
-      </div>
-    ))}
+          ))} */}
+      {/* </div>
+    ))} */}
 
         {decisionError && (
       <p className="convivencia-error">{decisionError}</p>
@@ -931,6 +970,78 @@ useEffect(() => {
     >
       Cerrar revisión
     </button>
+  </div>
+)}
+
+{selectedProposalDay && (
+  <div className="convivencia-modal-overlay">
+    <div
+      className="convivencia-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="proposal-day-title"
+    >
+      <div className="convivencia-modal-header">
+        <div>
+          <h3 id="proposal-day-title">
+            {getDayName(selectedProposalDay.date)}{" "}
+            {formatDate(selectedProposalDay.date)}
+          </h3>
+          <span>Propuesta pendiente · Solo consulta</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSelectedProposalDay(null)}
+          aria-label="Cerrar"
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <h4>Distribución de horarios</h4>
+
+      {selectedProposalDay.periods
+        .slice()
+        .sort((a, b) => a.start.localeCompare(b.start))
+        .map((period, index) => {
+          const responsible = responsables.find(
+            (item) => item.id === period.responsibleId
+          );
+
+          return (
+            <div
+              key={index}
+              style={{
+                borderLeft: `4px solid ${getResponsibleColor(
+                  period.responsibleId
+                )}`,
+                padding: "10px 12px",
+                marginBottom: "10px",
+                background: "#f5f5f5",
+                borderRadius: "6px",
+              }}
+            >
+              <strong>
+                {period.start} a {period.end}
+              </strong>
+              <p>
+                {responsible?.nombre || "Responsable no identificado"}
+              </p>
+            </div>
+          );
+        })}
+
+      <div className="convivencia-modal-actions">
+        <button
+          type="button"
+          className="convivencia-cancel-button"
+          onClick={() => setSelectedProposalDay(null)}
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
   </div>
 )}
 
