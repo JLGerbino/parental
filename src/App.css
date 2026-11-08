@@ -89,12 +89,12 @@ li,p{
   cursor: pointer;  
 }
 .welcome {
-  background-color: #ADC1c0;
+  background-color: rgb(223, 223, 220);
   text-align: center;
   margin-top: 80px;
 }
 .logo {
-  width: 280px;
+  width: 230px;
 }
 .Create{
   width:120px;
@@ -237,7 +237,7 @@ border-left: 6px solid #269181;
   position: absolute;
   top: 10px;
   right: 12px;
-  background-color: #35b67e;
+  background-color: #43ADB6;
   border-radius: 50%;
   border: none;
   font-size: 18px;
@@ -248,7 +248,7 @@ border-left: 6px solid #269181;
 .nuevo {
   width: 70px;
   height: 70px;
-  background-color: #35b67e;
+  background-color: red;/* #43ADB6;*/
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -258,7 +258,7 @@ border-left: 6px solid #269181;
 }
 
 .nuevo:hover{
-  background-color: #269181;
+  background-color: #78b2b8;
   transform: scale(1.02);
 }
 
@@ -285,7 +285,7 @@ border-left: 6px solid #269181;
 .nuevo-grupo {
   width: 60px;
   height: 60px;
-  background-color: #35b67e; 
+  background-color: #43ADB6;  /*#35b67e;*/ 
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -310,7 +310,7 @@ border-left: 6px solid #269181;
 }
 
 .checkbox{
-  accent-color: #35b67e;  
+  accent-color: #43ADB6  
 }
 .btn-danger{
   color: gray;

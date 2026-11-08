@@ -957,10 +957,11 @@ const handleBackFromChild = () => {
   if (!started && !groupId) {
     return (
       <div className="app welcome">
-        <LanguageSelector />
+        <h2 className="app-name">VINCULADOS</h2>
+        {/* <LanguageSelector /> */}
         <img src="logo.png" alt="Cuentas Claras" className="logo" />
         <h2>{t("slogan")}</h2>
-        <h3>{t("slogan2")}</h3>
+        {/* <h3>{t("slogan2")}</h3> */}
         <button className="boton" onClick={() => setStarted(true)}>
           {t("ingresar")}
         </button>

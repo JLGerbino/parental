@@ -153,7 +153,7 @@ function ChildProfile({ hijo, onBack, canEdit, onEdit, onEditChild }) {
         {canEdit && (
           <button type="button" onClick={() => handleEditChild(hijo)}>
             <i className="fa-solid fa-pen"></i>
-            Editar datos
+             <span> Editar datos</span>
           </button>
         )}
       </section>
