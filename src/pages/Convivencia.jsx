@@ -160,15 +160,46 @@ const Convivencia = ({
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [decidingProposal, setDecidingProposal] = useState(false);
   const [decisionError, setDecisionError] = useState("");
-  const [currentRegime, setCurrentRegime] = useState(null);//
+  //const [currentRegime, setCurrentRegime] = useState(null);//
   const [regimes, setRegimes] = useState([]);
   const [loadingRegime, setLoadingRegime] = useState(true);
   const [selectedRegimeDay, setSelectedRegimeDay] = useState(null);
   const [activeRegimeWeek, setActiveRegimeWeek] = useState(1);
   const [selectedProposalDay, setSelectedProposalDay] = useState(null);
+  const [activeSection, setActiveSection] = useState("menu");
+  const [selectedRegimeId, setSelectedRegimeId] = useState(null);
+  const [regimeOrigin, setRegimeOrigin] = useState(null);
 
   const currentWeek = weeks.find((week) => week.id === activeWeek);
-  const currentRegimeWeek = currentRegime?.weeks?.find((week) => week.id === activeRegimeWeek);
+  
+
+  const today = new Date().toISOString().slice(0, 10);
+
+const currentRegime = regimes.find(
+  (regime) =>
+    regime.startDate <= today &&
+    regime.endDate >= today
+) || null;
+
+const displayedRegime =
+  activeSection === "detalleRegimen"
+    ? regimes.find((regime) => regime.id === selectedRegimeId)
+    : currentRegime;
+
+const displayedRegimeWeek =
+  displayedRegime?.weeks?.find(
+    (week) => week.id === activeRegimeWeek
+  );    
+
+const upcomingRegimes = regimes
+  .filter((regime) => regime.startDate > today)
+  .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+const pastRegimes = regimes
+  .filter((regime) => regime.endDate < today)
+  .sort((a, b) => b.startDate.localeCompare(a.startDate));
+
+const currentRegimeWeek = currentRegime?.weeks?.find((week) => week.id === activeRegimeWeek);
 
   useEffect(() => {
   if (!groupId || !user?.uid || !responsableVinculado?.id) {
@@ -216,33 +247,98 @@ useEffect(() => {
     setLoadingRegime(false);
     return;
   }
-  const regimeRef = doc(
+
+  const regimesRef = collection(
     db,
     "groups",
     groupId,
-    "regimes",
-    "current"
+    "regimes"
+  );
+
+  const regimesQuery = query(
+    regimesRef,
+    orderBy("startDate", "asc")
   );
   const unsubscribe = onSnapshot(
-    regimeRef,
+    regimesQuery,
     (snapshot) => {
-      if (snapshot.exists()) {
-        setCurrentRegime({
-          id: snapshot.id,
-          ...snapshot.data(),
-        });
-      } else {
-        setCurrentRegime(null);
-      }
+      const loadedRegimes = snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data(),
+      }));
+
+      setRegimes(loadedRegimes);
+console.log("REGÍMENES CARGADOS:", loadedRegimes);
+console.log("FECHA DE HOY:", today);
+
+
+      // Compatibilidad temporal con la pantalla actual.
+      // const current = loadedRegimes.find(
+      //   (regime) => regime.id === "current"
+      // );
+
+      // setCurrentRegime(current || null);
+
       setLoadingRegime(false);
     },
     (err) => {
-      console.error("Error al cargar el régimen vigente:", err);
+      console.error("Error al cargar los regímenes:", err);
       setLoadingRegime(false);
     }
   );
   return () => unsubscribe();
 }, [groupId, user?.uid, responsableVinculado?.id]);
+
+
+
+const getDateKeysInRange = (startDate, endDate) => {
+  const dates = [];
+
+  const [startYear, startMonth, startDay] = startDate.split("-").map(Number);
+  const [endYear, endMonth, endDay] = endDate.split("-").map(Number);
+
+  const current = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+  const end = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+
+  while (current <= end) {
+    dates.push(current.toISOString().slice(0, 10));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return dates;
+};
+// useEffect(() => {
+//   if (!groupId || !user?.uid || !responsableVinculado?.id) {
+//     setLoadingRegime(false);
+//     return;
+//   }
+//   const regimeRef = doc(
+//     db,
+//     "groups",
+//     groupId,
+//     "regimes",
+//     "current"
+//   );
+//   const unsubscribe = onSnapshot(
+//     regimeRef,
+//     (snapshot) => {
+//       if (snapshot.exists()) {
+//         setCurrentRegime({
+//           id: snapshot.id,
+//           ...snapshot.data(),
+//         });
+//       } else {
+//         setCurrentRegime(null);
+//       }
+//       setLoadingRegime(false);
+//     },
+//     (err) => {
+//       console.error("Error al cargar el régimen vigente:", err);
+//       setLoadingRegime(false);
+//     }
+//   );
+//   return () => unsubscribe();
+// }, [groupId, user?.uid, responsableVinculado?.id]);
 
 
   const createSchedule = () => {
@@ -415,87 +511,222 @@ useEffect(() => {
   };
 
 
-    const handleProposalDecision = async (decision) => {
-    if (!selectedProposal || decidingProposal) return;
+  const handleProposalDecision = async (decision) => {
+  if (!selectedProposal || decidingProposal) return;
 
-    if (decision !== "approved" && decision !== "rejected") return;
+  if (decision !== "approved" && decision !== "rejected") return;
 
-    if (selectedProposal.createdByUid === user.uid) {
-      setDecisionError("No podés decidir sobre una propuesta que enviaste.");
-      return;
-    }
+  if (selectedProposal.createdByUid === user.uid) {
+    setDecisionError("No podés decidir sobre una propuesta que enviaste.");
+    return;
+  }
 
-    setDecidingProposal(true);
-    setDecisionError("");
+  setDecidingProposal(true);
+  setDecisionError("");
 
-    const proposalRef = doc(
-      db,
-      "groups",
-      groupId,
-      "scheduleProposals",
-      selectedProposal.id
-    );
+  const proposalRef = doc(
+    db,
+    "groups",
+    groupId,
+    "scheduleProposals",
+    selectedProposal.id
+  );
 
-    const regimeRef = doc(
-      db,
-      "groups",
-      groupId,
-      "regimes",
-      "current"
-    );
+  // Cada régimen tendrá como ID el ID de su propuesta.
+  const regimeRef = doc(
+    db,
+    "groups",
+    groupId,
+    "regimes",
+    selectedProposal.id
+  );
 
-    try {
-      await runTransaction(db, async (transaction) => {
-        const proposalSnapshot = await transaction.get(proposalRef);
+  try {
+    await runTransaction(db, async (transaction) => {
+      const proposalSnapshot = await transaction.get(proposalRef);
 
-        if (!proposalSnapshot.exists()) {
-          throw new Error("La propuesta ya no existe.");
+      if (!proposalSnapshot.exists()) {
+        throw new Error("La propuesta ya no existe.");
+      }
+
+      const proposal = proposalSnapshot.data();
+
+      if (proposal.status !== "pending") {
+        throw new Error("Esta propuesta ya fue resuelta.");
+      }
+
+      if (proposal.createdByUid === user.uid) {
+        throw new Error("No podés decidir sobre tu propia propuesta.");
+      }
+
+      if (decision === "approved") {
+        const dateKeys = getDateKeysInRange(
+          proposal.startDate,
+          proposal.endDate
+        );
+
+        const dateRefs = dateKeys.map((dateKey) =>
+          doc(
+            db,
+            "groups",
+            groupId,
+            "regimeDates",
+            dateKey
+          )
+        );
+
+        // Todas las lecturas se hacen antes de escribir.
+
+        const snapshots = await Promise.all([
+  transaction.get(regimeRef),
+  ...dateRefs.map((dateRef) => transaction.get(dateRef)),
+]);
+
+const regimeSnapshot = snapshots[0];
+const dateSnapshots = snapshots.slice(1);
+        // const [regimeSnapshot, dateSnapshots] = await Promise.all([
+        //   transaction.get(regimeRef),
+        //   ...dateRefs.map((dateRef) => transaction.get(dateRef)),
+        // ]);
+
+        if (regimeSnapshot.exists()) {
+          throw new Error("Esta propuesta ya tiene un régimen creado.");
         }
 
-        const proposal = proposalSnapshot.data();
-
-        if (proposal.status !== "pending") {
-          throw new Error("Esta propuesta ya fue resuelta.");
+        if (dateSnapshots.some((snapshot) => snapshot.exists())) {
+          throw new Error(
+            "El período se superpone con otro régimen aprobado."
+          );
         }
 
-        if (proposal.createdByUid === user.uid) {
-          throw new Error("No podés decidir sobre tu propia propuesta.");
-        }
+        transaction.set(regimeRef, {
+          proposalId: selectedProposal.id,
+          approvedByUid: user.uid,
+          approvedByResponsibleId: responsableVinculado.id,
+          createdByUid: proposal.createdByUid,
+          startDate: proposal.startDate,
+          endDate: proposal.endDate,
+          childIds: proposal.childIds,
+          weeks: proposal.weeks,
+          updatedAt: serverTimestamp(),
+        });
 
-        if (decision === "approved") {
-          transaction.set(regimeRef, {
-            proposalId: selectedProposal.id,
-            approvedByUid: user.uid,
-            approvedByResponsibleId: responsableVinculado.id,
-            createdByUid: proposal.createdByUid,
+        dateRefs.forEach((dateRef) => {
+          transaction.set(dateRef, {
+            date: dateRef.id,
+            regimeId: selectedProposal.id,
             startDate: proposal.startDate,
             endDate: proposal.endDate,
-            childIds: proposal.childIds,
-            weeks: proposal.weeks,
-            updatedAt: serverTimestamp(),
+            createdAt: serverTimestamp(),
           });
-        }
-
-        transaction.update(proposalRef, {
-          status: decision,
-          decidedByUid: user.uid,
-          decidedAt: serverTimestamp(),
         });
-      });
+      }
 
-      setSelectedProposal(null);
-      setDecisionError("");
-    } catch (err) {
-      console.error("Error al resolver la propuesta:", err);
-      setDecisionError(
-        err.message === "Esta propuesta ya fue resuelta."
-          ? err.message
-          : "No se pudo registrar la decisión. Revisá tu conexión e intentá nuevamente."
-      );
-    } finally {
-      setDecidingProposal(false);
-    }
-  };
+      transaction.update(proposalRef, {
+        status: decision,
+        decidedByUid: user.uid,
+        decidedAt: serverTimestamp(),
+      });
+    });
+
+    setSelectedProposal(null);
+    setDecisionError("");
+  } catch (err) {
+    console.error("Error al resolver la propuesta:", err);
+
+    setDecisionError(
+      err.message === "Esta propuesta ya fue resuelta." ||
+      err.message === "No podés decidir sobre tu propia propuesta." ||
+      err.message === "El período se superpone con otro régimen aprobado." ||
+      err.message === "Esta propuesta ya tiene un régimen creado."
+        ? err.message
+        : "No se pudo registrar la decisión. Revisá tu conexión e intentá nuevamente."
+    );
+  } finally {
+    setDecidingProposal(false);
+  }
+};
+  //   const handleProposalDecision = async (decision) => {
+  //   if (!selectedProposal || decidingProposal) return;
+
+  //   if (decision !== "approved" && decision !== "rejected") return;
+
+  //   if (selectedProposal.createdByUid === user.uid) {
+  //     setDecisionError("No podés decidir sobre una propuesta que enviaste.");
+  //     return;
+  //   }
+
+  //   setDecidingProposal(true);
+  //   setDecisionError("");
+
+  //   const proposalRef = doc(
+  //     db,
+  //     "groups",
+  //     groupId,
+  //     "scheduleProposals",
+  //     selectedProposal.id
+  //   );
+
+  //   const regimeRef = doc(
+  //     db,
+  //     "groups",
+  //     groupId,
+  //     "regimes",
+  //     "current"
+  //   );
+
+  //   try {
+  //     await runTransaction(db, async (transaction) => {
+  //       const proposalSnapshot = await transaction.get(proposalRef);
+
+  //       if (!proposalSnapshot.exists()) {
+  //         throw new Error("La propuesta ya no existe.");
+  //       }
+
+  //       const proposal = proposalSnapshot.data();
+
+  //       if (proposal.status !== "pending") {
+  //         throw new Error("Esta propuesta ya fue resuelta.");
+  //       }
+
+  //       if (proposal.createdByUid === user.uid) {
+  //         throw new Error("No podés decidir sobre tu propia propuesta.");
+  //       }
+
+  //       if (decision === "approved") {
+  //         transaction.set(regimeRef, {
+  //           proposalId: selectedProposal.id,
+  //           approvedByUid: user.uid,
+  //           approvedByResponsibleId: responsableVinculado.id,
+  //           createdByUid: proposal.createdByUid,
+  //           startDate: proposal.startDate,
+  //           endDate: proposal.endDate,
+  //           childIds: proposal.childIds,
+  //           weeks: proposal.weeks,
+  //           updatedAt: serverTimestamp(),
+  //         });
+  //       }
+
+  //       transaction.update(proposalRef, {
+  //         status: decision,
+  //         decidedByUid: user.uid,
+  //         decidedAt: serverTimestamp(),
+  //       });
+  //     });
+
+  //     setSelectedProposal(null);
+  //     setDecisionError("");
+  //   } catch (err) {
+  //     console.error("Error al resolver la propuesta:", err);
+  //     setDecisionError(
+  //       err.message === "Esta propuesta ya fue resuelta."
+  //         ? err.message
+  //         : "No se pudo registrar la decisión. Revisá tu conexión e intentá nuevamente."
+  //     );
+  //   } finally {
+  //     setDecidingProposal(false);
+  //   }
+  // };
 
 
 
@@ -569,23 +800,82 @@ useEffect(() => {
   return (
     <div className="convivencia-container">
 
+      {activeSection === "menu" && (
+  <div className="convivencia-form">
+    <h2>Convivencia</h2>
+    <p>Organizá los tiempos de convivencia de tus hijos.</p>
 
-<div className="convivencia-form">
-  <h3>Régimen vigente</h3>
+    <button
+      type="button"
+      className="convivencia-main-button"
+      onClick={() => setActiveSection("planificar")}
+    >
+      Planificar convivencia
+    </button>
+
+    <button
+      type="button"
+      className="convivencia-main-button"
+      onClick={() => setActiveSection("vigente")}
+    >
+      Régimen vigente
+    </button>
+
+    <button
+      type="button"
+      className="convivencia-main-button"
+      onClick={() => setActiveSection("aprobados")}
+    >
+      Regímenes aprobados
+    </button>
+
+    <button
+      type="button"
+      className="convivencia-main-button"
+      onClick={() => setActiveSection("pasados")}
+    >
+      Regímenes pasados
+    </button>
+  </div>
+)}
+
+{/* <div className="convivencia-form">
+  <h3>Régimen vigente</h3> */}
+{(activeSection === "vigente" ||
+  activeSection === "detalleRegimen") && displayedRegime && (
+  <div className="convivencia-form">
+    <div className="d-flex justify-content-between align-items-center">
+      <h2>Régimen vigente</h2>
+      <button
+        type="button"
+        className="btn btn-outline-secondary"
+        onClick={() => {
+  if (activeSection === "detalleRegimen") {
+    setSelectedRegimeId(null);
+    setActiveSection(regimeOrigin || "aprobados");
+    setRegimeOrigin(null);
+  } else {
+    setActiveSection("menu");
+  }
+}}
+      >
+        Volver
+      </button>
+    </div>
 
   {loadingRegime ? (
     <p>Cargando régimen vigente...</p>
-  ) : currentRegime ? (
+  ) : displayedRegime ? (
     <>
       <p className="convivencia-help">
-        Período: {formatDate(currentRegime.startDate)} al{" "}
-        {formatDate(currentRegime.endDate)}
+        Período: {formatDate(displayedRegime.startDate)} al{" "}
+        {formatDate(displayedRegime.endDate)}
       </p>
 
       <div className="convivencia-children">
         <strong>Hijos incluidos</strong>
         <p>
-          {currentRegime.childIds
+          {displayedRegime.childIds
             .map(
               (childId) =>
                 hijos.find((hijo) => hijo.id === childId)?.nombre ||
@@ -598,12 +888,12 @@ useEffect(() => {
       <p className="convivencia-help">
         Propuesta aprobada por:{" "}
         {responsables.find(
-          (item) => item.id === currentRegime.approvedByResponsibleId
+          (item) => item.id === displayedRegime.approvedByResponsibleId
         )?.nombre || "Responsable"}
       </p>
 
       <div className="convivencia-week-tabs">
-  {currentRegime.weeks.map((week) => (
+  {displayedRegime.weeks.map((week) => (
     <button
       type="button"
       key={week.id}
@@ -618,21 +908,21 @@ useEffect(() => {
   ))}
 </div>
 
-{currentRegimeWeek && (
+{displayedRegimeWeek && (
   <>
     <div className="convivencia-week-heading">
       <h3>Semana {activeRegimeWeek}</h3>
       <span>
-        {formatDate(currentRegimeWeek.startDate)}
+        {formatDate(displayedRegimeWeek.startDate)}
         {" al "}
         {formatDate(
-          currentRegimeWeek.days
+          displayedRegimeWeek.days
             .filter(
               (day) =>
-                day.date >= currentRegime.startDate &&
-                day.date <= currentRegime.endDate
+                day.date >= displayedRegime.startDate &&
+                day.date <= displayedRegime.endDate
             )
-            .slice(-1)[0]?.date || currentRegimeWeek.startDate
+            .slice(-1)[0]?.date || displayedRegimeWeek.startDate
         )}
       </span>
     </div>
@@ -642,11 +932,11 @@ useEffect(() => {
     </p>
 
     <div className="convivencia-days-grid">
-      {currentRegimeWeek.days
+      {displayedRegimeWeek.days
         .filter(
           (day) =>
-            day.date >= currentRegime.startDate &&
-            day.date <= currentRegime.endDate
+            day.date >= displayedRegime.startDate &&
+            day.date <= displayedRegime.endDate
         )
         .map((day) => {
           const colors = getDayColors(day);
@@ -738,7 +1028,7 @@ useEffect(() => {
       Todavía no hay un régimen de convivencia aprobado.
     </p>
   )}
-</div>
+</div>)}
       
 {selectedRegimeDay && (
   <div className="convivencia-modal-overlay">
@@ -813,7 +1103,8 @@ useEffect(() => {
 )}
 
 
-
+{activeSection === "planificar" && (
+  <>
       {loadingProposals ? (
   <p>Cargando propuestas...</p>
 ) : proposals.length > 0 ? (
@@ -905,40 +1196,7 @@ useEffect(() => {
     </div>
   </div>
 ))}
-
-
-    {/* {selectedProposal.weeks.map((week) => (
-      <div key={week.id} className="convivencia-proposal-week">
-        <h4>
-          Semana {week.id} — {formatDate(week.startDate)}
-        </h4>
-
-        {week.days
-          .filter((day) => day.date >= selectedProposal.startDate &&
-            day.date <= selectedProposal.endDate)
-          .map((day) => (
-            <div key={day.date} className="convivencia-proposal-day">
-              <strong>
-                {getDayName(day.date)} {formatDate(day.date)}
-              </strong>
-
-              {day.periods.map((period, index) => {
-                const responsible = responsables.find(
-                  (item) => item.id === period.responsibleId
-                );
-
-                return (
-                  <p key={index}>
-                    {period.start} a {period.end} —{" "}
-                    {responsible?.nombre || "Responsable no identificado"}
-                  </p>
-                );
-              })}
-            </div>
-          ))} */}
-      {/* </div>
-    ))} */}
-
+    
         {decisionError && (
       <p className="convivencia-error">{decisionError}</p>
     )}
@@ -972,6 +1230,7 @@ useEffect(() => {
       Cerrar revisión
     </button>
   </div>
+)}  </>
 )}
 
 {selectedProposalDay && (
@@ -1047,14 +1306,116 @@ useEffect(() => {
 )}
 
 
-      <h2>Régimen de convivencia</h2>
+{activeSection === "aprobados" && (
+  <div className="convivencia-form">
+    <div className="d-flex justify-content-between align-items-center">
+      <h2>Regímenes aprobados</h2>
+
+      <button
+        type="button"
+        className="btn btn-outline-secondary"
+        onClick={() => setActiveSection("menu")}
+      >
+        Volver
+      </button>
+    </div>
+
+    {upcomingRegimes.length === 0 ? (
+      <p>No hay regímenes aprobados pendientes de comenzar.</p>
+    ) : (
+      upcomingRegimes.map((regime) => (
+        <div key={regime.id} className="convivencia-proposal">
+          <strong>Régimen aprobado</strong>
+
+          <p>
+            Período: {formatDate(regime.startDate)} al{" "}
+            {formatDate(regime.endDate)}
+          </p>
+          <button
+  type="button"
+  className="convivencia-main-button"
+  onClick={() => {
+    setSelectedRegimeId(regime.id);
+    setRegimeOrigin("aprobados");
+    setActiveSection("detalleRegimen");
+  }}
+>
+  Ver calendario
+</button>
+        </div>
+      ))
+    )}
+  </div>
+)}
+
+{/* Pantalla regimenes pasados */}
+{activeSection === "pasados" && (
+  <div className="convivencia-form">
+    <div className="d-flex justify-content-between align-items-center">
+      <h2>Regímenes pasados</h2>
+
+      <button
+        type="button"
+        className="btn btn-outline-secondary"
+        onClick={() => setActiveSection("menu")}
+      >
+        Volver
+      </button>
+    </div>
+
+    {pastRegimes.length === 0 ? (
+      <p>No hay regímenes anteriores.</p>
+    ) : (
+      pastRegimes.map((regime) => (
+        <div key={regime.id} className="convivencia-proposal">
+          <strong>Régimen finalizado</strong>
+
+          <p>
+            Período: {formatDate(regime.startDate)} al{" "}
+            {formatDate(regime.endDate)}
+          </p>
+
+          <button
+            type="button"
+            className="convivencia-main-button"
+            onClick={() => {
+              setSelectedRegimeId(regime.id);
+              setRegimeOrigin("pasados");
+              setActiveSection("detalleRegimen");
+            }}
+          >
+            Ver calendario
+          </button>
+        </div>
+      ))
+    )}
+  </div>
+)}
+
+{/* <div className="convivencia-form">
+      <h2>Régimen de convivencia</h2> */}
+
+      {activeSection === "planificar" && (
+  <>
+    <div className="d-flex justify-content-between align-items-center">
+      <h2>Planificar convivencia</h2>
+      <button
+        type="button"
+        className="btn btn-outline-secondary"
+        onClick={() => setActiveSection("menu")}
+      >
+        Volver
+      </button>
+    </div>
+
+    <div className="convivencia-form">
 
       <p className="convivencia-description">
         Organicen los tiempos de convivencia de sus hijos mediante un acuerdo
         entre ambos responsables.
       </p>
 
-      <div className="convivencia-form">
+      
         <h3>Planificar convivencia</h3>
 
         {!weeks.length ? (
@@ -1250,7 +1611,7 @@ useEffect(() => {
     aceptación por parte del otro responsable. Hasta entonces, no modifica
     el régimen vigente.
   </p>
-)}
+)}  
 
             {/* {scheduleClosed && (
               <p className="convivencia-success">
@@ -1260,8 +1621,11 @@ useEffect(() => {
               </p>
             )} */}
           </>
-        )}
+        
+              )}
       </div>
+  </>
+)}
 
       {expandedDay !== null && currentWeek && (
         <div className="convivencia-modal-overlay">
