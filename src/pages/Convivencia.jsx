@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 
 
+
 const days = [
   "Lunes",
   "Martes",
@@ -842,10 +843,14 @@ const dateSnapshots = snapshots.slice(1);
 {/* <div className="convivencia-form">
   <h3>Régimen vigente</h3> */}
 {(activeSection === "vigente" ||
-  activeSection === "detalleRegimen") && displayedRegime && (
+  activeSection === "detalleRegimen") && (
   <div className="convivencia-form">
     <div className="d-flex justify-content-between align-items-center">
-      <h2>Régimen vigente</h2>
+      <h2>
+  {activeSection === "detalleRegimen"
+    ? "Detalle del régimen"
+    : "Régimen vigente"}
+</h2>
       <button
         type="button"
         className="btn btn-outline-secondary"
