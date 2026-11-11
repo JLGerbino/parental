@@ -159,6 +159,10 @@ const Convivencia = ({
   const [proposals, setProposals] = useState([]);
   const [loadingProposals, setLoadingProposals] = useState(true);
   const [selectedProposal, setSelectedProposal] = useState(null);
+  const [myProposals, setMyProposals] = useState([]);
+  const [loadingMyProposals, setLoadingMyProposals] = useState(true);
+  const [selectedSentProposal, setSelectedSentProposal] = useState(null);
+  const [selectedSentProposalDay, setSelectedSentProposalDay] = useState(null);
   const [decidingProposal, setDecidingProposal] = useState(false);
   const [decisionError, setDecisionError] = useState("");
   //const [currentRegime, setCurrentRegime] = useState(null);//
@@ -241,6 +245,47 @@ const currentRegimeWeek = currentRegime?.weeks?.find((week) => week.id === activ
 
   return () => unsubscribe();
 }, [groupId, user?.uid, responsableVinculado?.id]);
+
+
+useEffect(() => {
+  if (!groupId || !user?.uid || !responsableVinculado?.id) {
+    setLoadingMyProposals(false);
+    return;
+  }
+  const myProposalsRef = collection(
+    db,
+    "groups",
+    groupId,
+    "scheduleProposals"
+  );
+  const myProposalsQuery = query(
+    myProposalsRef,
+    where("createdByUid", "==", user.uid)
+  );
+  const unsubscribe = onSnapshot(
+    myProposalsQuery,
+    (snapshot) => {
+      const loadedProposals = snapshot.docs
+        .map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }))
+        .sort(
+          (a, b) =>
+            (b.createdAt?.seconds || 0) -
+            (a.createdAt?.seconds || 0)
+        );
+      setMyProposals(loadedProposals);
+      setLoadingMyProposals(false);
+    },
+    (err) => {
+      console.error("Error al cargar mis propuestas:", err);
+      setLoadingMyProposals(false);
+    }
+  );
+  return () => unsubscribe();
+}, [groupId, user?.uid, responsableVinculado?.id]);
+
 
 
 useEffect(() => {
@@ -647,89 +692,7 @@ const dateSnapshots = snapshots.slice(1);
     setDecidingProposal(false);
   }
 };
-  //   const handleProposalDecision = async (decision) => {
-  //   if (!selectedProposal || decidingProposal) return;
-
-  //   if (decision !== "approved" && decision !== "rejected") return;
-
-  //   if (selectedProposal.createdByUid === user.uid) {
-  //     setDecisionError("No podés decidir sobre una propuesta que enviaste.");
-  //     return;
-  //   }
-
-  //   setDecidingProposal(true);
-  //   setDecisionError("");
-
-  //   const proposalRef = doc(
-  //     db,
-  //     "groups",
-  //     groupId,
-  //     "scheduleProposals",
-  //     selectedProposal.id
-  //   );
-
-  //   const regimeRef = doc(
-  //     db,
-  //     "groups",
-  //     groupId,
-  //     "regimes",
-  //     "current"
-  //   );
-
-  //   try {
-  //     await runTransaction(db, async (transaction) => {
-  //       const proposalSnapshot = await transaction.get(proposalRef);
-
-  //       if (!proposalSnapshot.exists()) {
-  //         throw new Error("La propuesta ya no existe.");
-  //       }
-
-  //       const proposal = proposalSnapshot.data();
-
-  //       if (proposal.status !== "pending") {
-  //         throw new Error("Esta propuesta ya fue resuelta.");
-  //       }
-
-  //       if (proposal.createdByUid === user.uid) {
-  //         throw new Error("No podés decidir sobre tu propia propuesta.");
-  //       }
-
-  //       if (decision === "approved") {
-  //         transaction.set(regimeRef, {
-  //           proposalId: selectedProposal.id,
-  //           approvedByUid: user.uid,
-  //           approvedByResponsibleId: responsableVinculado.id,
-  //           createdByUid: proposal.createdByUid,
-  //           startDate: proposal.startDate,
-  //           endDate: proposal.endDate,
-  //           childIds: proposal.childIds,
-  //           weeks: proposal.weeks,
-  //           updatedAt: serverTimestamp(),
-  //         });
-  //       }
-
-  //       transaction.update(proposalRef, {
-  //         status: decision,
-  //         decidedByUid: user.uid,
-  //         decidedAt: serverTimestamp(),
-  //       });
-  //     });
-
-  //     setSelectedProposal(null);
-  //     setDecisionError("");
-  //   } catch (err) {
-  //     console.error("Error al resolver la propuesta:", err);
-  //     setDecisionError(
-  //       err.message === "Esta propuesta ya fue resuelta."
-  //         ? err.message
-  //         : "No se pudo registrar la decisión. Revisá tu conexión e intentá nuevamente."
-  //     );
-  //   } finally {
-  //     setDecidingProposal(false);
-  //   }
-  // };
-
-
+  
 
 
   const closeSchedule = async () => {
@@ -784,19 +747,6 @@ const dateSnapshots = snapshots.slice(1);
   }
 };
 
-  // const closeSchedule = () => {
-  //   const errors = weeks
-  //     .map((week) => validateWeek(week, endDate))
-  //     .filter(Boolean);
-
-  //   if (errors.length > 0) {
-  //     setError(errors.join("\n"));
-  //     return;
-  //   }
-
-  //   setScheduleClosed(true);
-  //   setError("");
-  // };
 
   return (
     <div className="convivencia-container">
@@ -829,6 +779,13 @@ const dateSnapshots = snapshots.slice(1);
     >
       Regímenes aprobados
     </button>
+
+    <button
+  className="convivencia-main-button"
+  onClick={() => setActiveSection("misPropuestas")}
+>
+  Mis propuestas enviadas
+</button>
 
     <button
       type="button"
@@ -1350,6 +1307,242 @@ const dateSnapshots = snapshots.slice(1);
         </div>
       ))
     )}
+  </div>
+)}
+
+
+{activeSection === "misPropuestas" && (
+  <div className="convivencia-form">
+    <div className="d-flex justify-content-between align-items-center mb-3">
+      <h2>Mis propuestas enviadas</h2>
+
+      <button
+        className="btn btn-secondary"
+        onClick={() => {
+          setSelectedSentProposal(null);
+          setActiveSection("menu");
+        }}
+      >
+        Volver
+      </button>
+    </div>
+
+    {loadingMyProposals ? (
+      <p>Cargando tus propuestas...</p>
+    ) : myProposals.length === 0 ? (
+      <p className="convivencia-help">
+        Todavía no enviaste ninguna propuesta de convivencia.
+      </p>
+    ) : (
+      myProposals.map((proposal) => {
+        const statusLabels = {
+          pending: "Pendiente",
+          approved: "Aceptada",
+          rejected: "Rechazada",
+          withdrawn: "Retirada",
+        };
+
+        return (
+          <div
+            key={proposal.id}
+            className="convivencia-proposal"
+          >
+            <strong>
+              {statusLabels[proposal.status] || proposal.status}
+            </strong>
+
+            <p>
+              Período: {formatDate(proposal.startDate)} al{" "}
+              {formatDate(proposal.endDate)}
+            </p>
+
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setSelectedSentProposal(proposal);
+                setActiveSection("detallePropuestaEnviada");
+              }}
+            >
+              Ver propuesta
+            </button>
+          </div>
+        );
+      })
+    )}
+  </div>
+)}
+
+
+{activeSection === "detallePropuestaEnviada" &&
+  selectedSentProposal && (
+    <div className="convivencia-form">
+      <div className="d-flex justify-content-between align-items-center">
+        <h2>Detalle de mi propuesta</h2>
+
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={() => {
+            setSelectedSentProposal(null);
+            setSelectedSentProposalDay(null);
+            setActiveSection("misPropuestas");
+          }}
+        >
+          Volver
+        </button>
+      </div>
+
+      <p>
+        <strong>Estado:</strong>{" "}
+        {{
+          pending: "Pendiente de respuesta",
+          approved: "Aceptada",
+          rejected: "Rechazada",
+          withdrawn: "Retirada",
+        }[selectedSentProposal.status] || selectedSentProposal.status}
+      </p>
+
+      <p>
+        <strong>Período:</strong>{" "}
+        {formatDate(selectedSentProposal.startDate)} al{" "}
+        {formatDate(selectedSentProposal.endDate)}
+      </p>
+
+      <div className="convivencia-children">
+        <strong>Hijos incluidos</strong>
+        <p>
+          {selectedSentProposal.childIds
+            .map(
+              (childId) =>
+                hijos.find((hijo) => hijo.id === childId)?.nombre || "Hijo"
+            )
+            .join(", ")}
+        </p>
+      </div>
+
+      <p className="convivencia-help">
+        Esta propuesta se muestra únicamente para consulta. Su contenido no
+        puede modificarse desde esta pantalla.
+      </p>
+
+      {selectedSentProposal.weeks.map((week) => (
+        <div
+          key={week.id}
+          className="convivencia-proposal-week"
+        >
+          <h4>
+            Semana {week.id} — {formatDate(week.startDate)}
+          </h4>
+
+          <div className="convivencia-days-grid">
+            {week.days
+              .filter(
+                (day) =>
+                  day.date >= selectedSentProposal.startDate &&
+                  day.date <= selectedSentProposal.endDate
+              )
+              .map((day) => (
+                <button
+                  key={day.date}
+                  type="button"
+                  className="convivencia-day"
+                  onClick={() => setSelectedSentProposalDay(day)}
+                >
+                  <strong>{getDayName(day.date).slice(0, 3)}</strong>
+
+                  <span>{day.date.split("-")[2]}</span>
+
+                  <div className="convivencia-day-colors">
+                    {getDayColors(day).map((color, index) => (
+                      <span
+                        key={index}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+
+                  <small>{day.periods.length} tramo(s)</small>
+                </button>
+              ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+
+
+  {selectedSentProposalDay && (
+  <div className="convivencia-modal-overlay">
+    <div
+      className="convivencia-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sent-proposal-day-title"
+    >
+      <div className="convivencia-modal-header">
+        <div>
+          <h3 id="sent-proposal-day-title">
+            {getDayName(selectedSentProposalDay.date)}{" "}
+            {formatDate(selectedSentProposalDay.date)}
+          </h3>
+
+          <span>Mi propuesta · Solo consulta</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSelectedSentProposalDay(null)}
+          aria-label="Cerrar"
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <h4>Distribución de horarios</h4>
+
+      {selectedSentProposalDay.periods
+        .slice()
+        .sort((a, b) => a.start.localeCompare(b.start))
+        .map((period, index) => {
+          const responsible = responsables.find(
+            (item) => item.id === period.responsibleId
+          );
+
+          return (
+            <div
+              key={index}
+              className="convivencia-period"
+              style={{
+                borderLeft: `4px solid ${getResponsibleColor(
+                  period.responsibleId
+                )}`,
+                padding: "10px 12px",
+                marginBottom: "10px",
+                background: "#f5f5f5",
+                borderRadius: "6px",
+              }}
+            >
+              <strong>
+                {period.start} a {period.end}
+              </strong>
+
+              <p>
+                {responsible?.nombre || "Responsable no identificado"}
+              </p>
+            </div>
+          );
+        })}
+
+      <div className="convivencia-modal-actions">
+        <button
+          type="button"
+          className="convivencia-cancel-button"
+          onClick={() => setSelectedSentProposalDay(null)}
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
   </div>
 )}
 
