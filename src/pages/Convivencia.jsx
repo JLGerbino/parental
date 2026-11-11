@@ -11,6 +11,7 @@ import {
   orderBy,
   doc,
   runTransaction,
+  updateDoc,
 } from "firebase/firestore";
 
 
@@ -174,6 +175,7 @@ const Convivencia = ({
   const [activeSection, setActiveSection] = useState("menu");
   const [selectedRegimeId, setSelectedRegimeId] = useState(null);
   const [regimeOrigin, setRegimeOrigin] = useState(null);
+  const [withdrawingProposalId, setWithdrawingProposalId] = useState(null);
 
   const currentWeek = weeks.find((week) => week.id === activeWeek);
   
@@ -690,6 +692,46 @@ const dateSnapshots = snapshots.slice(1);
     );
   } finally {
     setDecidingProposal(false);
+  }
+};
+
+
+const handleWithdrawProposal = async (proposal) => {
+  const confirmed = window.confirm(
+    "¿Querés retirar esta propuesta? El otro responsable ya no podrá aceptarla ni rechazarla."
+  );
+
+  if (!confirmed) return;
+
+  try {
+    setWithdrawingProposalId(proposal.id);
+
+    const proposalRef = doc(
+      db,
+      "groups",
+      groupId,
+      "scheduleProposals",
+      proposal.id
+    );
+
+    await updateDoc(proposalRef, {
+      status: "withdrawn",
+      withdrawnByUid: user.uid,
+      withdrawnAt: serverTimestamp(),
+    });
+
+    setSelectedSentProposal((prev) =>
+      prev?.id === proposal.id
+        ? { ...prev, status: "withdrawn" }
+        : prev
+    );
+
+    window.alert("La propuesta fue retirada correctamente.");
+  } catch (error) {
+    console.error("Error al retirar la propuesta:", error);
+    window.alert("No se pudo retirar la propuesta. Intentá nuevamente.");
+  } finally {
+    setWithdrawingProposalId(null);
   }
 };
   
@@ -1425,6 +1467,27 @@ const dateSnapshots = snapshots.slice(1);
         puede modificarse desde esta pantalla.
       </p>
 
+
+       {selectedSentProposal.status === "pending" && (
+  <button
+    className="btn btn-danger mt-3"
+    onClick={() => handleWithdrawProposal(selectedSentProposal)}
+    disabled={withdrawingProposalId === selectedSentProposal.id}
+  >
+    {withdrawingProposalId === selectedSentProposal.id
+      ? "Retirando..."
+      : "Retirar propuesta"}
+  </button>
+)}
+
+
+
+
+
+
+
+
+
       {selectedSentProposal.weeks.map((week) => (
         <div
           key={week.id}
@@ -1485,6 +1548,8 @@ const dateSnapshots = snapshots.slice(1);
             {getDayName(selectedSentProposalDay.date)}{" "}
             {formatDate(selectedSentProposalDay.date)}
           </h3>
+
+         
 
           <span>Mi propuesta · Solo consulta</span>
         </div>
