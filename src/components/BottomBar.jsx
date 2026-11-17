@@ -24,6 +24,16 @@ const BottomBar = ({
       </div>
 
       <div
+  className={`bottom-icon ${
+    !bothResponsiblesLinked ? "disabled" : ""
+  } ${activePage === "expenses" ? "active" : ""}`}
+  onClick={() => navigate("expenses")}
+>
+  <i className="fa-solid fa-wallet"></i>
+  <small>Gastos</small>
+</div>
+
+      <div
   className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""} ${activePage === "agenda" ? "active" : ""}`}
   onClick={() => navigate("agenda")}
 >

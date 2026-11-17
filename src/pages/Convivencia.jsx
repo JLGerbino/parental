@@ -16,6 +16,7 @@ import {
 
 
 
+
 const days = [
   "Lunes",
   "Martes",
@@ -1365,7 +1366,7 @@ const handleWithdrawProposal = async (proposal) => {
           setActiveSection("menu");
         }}
       >
-        Volver
+      Volver
       </button>
     </div>
 
@@ -1479,14 +1480,6 @@ const handleWithdrawProposal = async (proposal) => {
       : "Retirar propuesta"}
   </button>
 )}
-
-
-
-
-
-
-
-
 
       {selectedSentProposal.weeks.map((week) => (
         <div

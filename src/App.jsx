@@ -7,6 +7,7 @@ import ChildProfile from "./pages/ChildProfile.jsx";
 import SettingsMenu from "./components/SettingsMenu";
 import BottomBar from "./components/BottomBar.jsx";
 import Convivencia from "./pages/Convivencia.jsx";
+import Expenses from "./pages/Expenses.jsx";
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
 import BalanceList from "./components/balanceList";
@@ -48,6 +49,7 @@ function App() {
   const [activePage, setActivePage] = useState("home");
   const [unreadChat, setUnreadChat] = useState(0);
   const [responsables, setResponsables] = useState([]);
+  const [expenseAgreements, setExpenseAgreements] = useState([]);
   const [hijos, setHijos] = useState([]);
   const [responsableVinculado, setResponsableVinculado] = useState(null);
   const [identificandoResponsable, setIdentificandoResponsable] = useState(true);
@@ -122,6 +124,21 @@ useEffect(() => {
 
   //si no hay admin todos editan si hay, solo edita admin
   const canEdit = !hasAdmin || isAdmin;
+
+
+  const acuerdoVigente = expenseAgreements
+  .filter((acuerdo) => acuerdo.status === "approved")
+  .sort((a, b) => {
+    const fechaA = a.effectiveFrom?.toDate
+      ? a.effectiveFrom.toDate()
+      : new Date(a.effectiveFrom || 0);
+
+    const fechaB = b.effectiveFrom?.toDate
+      ? b.effectiveFrom.toDate()
+      : new Date(b.effectiveFrom || 0);
+
+    return fechaB - fechaA;
+  })[0] || null;
 
 
 
@@ -257,100 +274,100 @@ useEffect(() => {
 
 
   //Traspasar administrador
-  const handleAdminPinLogin = async () => {
-    const result = await Swal.fire({
-      title: t("queresSerAdministrador?"),
-      text: t("ingresaPIN"),
-      input: "password",
-      background: "#dee0e0",
-      color: "#283655",
-      iconColor: "#269181",
-      showCancelButton: true,
-      confirmButtonColor: "#35b67e",
-      confirmButtonText: t("confirmar"),
-      cancelButtonText: t("cerrar"),
-      inputAttributes: {
-        maxlength: 4,
-        inputmode: "numeric",
-      },
-      inputPlaceholder: t("pin4"),
-    });
+  // const handleAdminPinLogin = async () => {
+  //   const result = await Swal.fire({
+  //     title: t("queresSerAdministrador?"),
+  //     text: t("ingresaPIN"),
+  //     input: "password",
+  //     background: "#dee0e0",
+  //     color: "#283655",
+  //     iconColor: "#269181",
+  //     showCancelButton: true,
+  //     confirmButtonColor: "#35b67e",
+  //     confirmButtonText: t("confirmar"),
+  //     cancelButtonText: t("cerrar"),
+  //     inputAttributes: {
+  //       maxlength: 4,
+  //       inputmode: "numeric",
+  //     },
+  //     inputPlaceholder: t("pin4"),
+  //   });
 
-    if (!result.isConfirmed) return;
+  //   if (!result.isConfirmed) return;
 
-    const pin = result.value;
-
-
-    if (!pin || !pin.trim()) {
-      await Swal.fire({
-        title: t("tenesIngresarPIN4"),
-        icon: "warning",
-        iconColor: "#269181",
-        confirmButtonColor: "#35b67e",
-        background: "#dee0e0",
-        color: "#283655",
-      });
-      return;
-    }
-    if (pin !== group.adminPin) {
-      await Swal.fire({
-        title: t("PINIncorrecto"),
-        icon: "error",
-        iconColor: "#269181",
-        confirmButtonColor: "#35b67e",
-        background: "#dee0e0",
-        color: "#283655",
-      });
-      return;
-    }
-    const { value: newName } = await Swal.fire({
-      title: t("ingresaNombreAdmin"),
-      input: "text",
-      inputPlaceholder: t("tuNombre"),
-      background: "#dee0e0",
-      color: "#283655",
-      confirmButtonColor: "#35b67e",
-      confirmButtonText: t("confirmar"),
-      cancelButtonText: t("cancelar"),
-      showCancelButton: true,
-      inputValidator: (value) => {
-        if (!value || !value.trim()) {
-          return t("ingresarNombreAdmin");
-        }
-      },
-    });
-
-    if (!newName) return;
-
-    Swal.fire({
-      title: t("cambiandoAdmin"),
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      background: "#dee0e0",
-      color: "#283655",
-      iconColor: "#269181",
-      confirmButtonColor: "#35b67e",
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
+  //   const pin = result.value;
 
 
-    await updateDoc(doc(db, "groups", groupId), {
-      adminUid: user.uid,
-      adminName: newName,
-    });
+  //   if (!pin || !pin.trim()) {
+  //     await Swal.fire({
+  //       title: t("tenesIngresarPIN4"),
+  //       icon: "warning",
+  //       iconColor: "#269181",
+  //       confirmButtonColor: "#35b67e",
+  //       background: "#dee0e0",
+  //       color: "#283655",
+  //     });
+  //     return;
+  //   }
+  //   if (pin !== group.adminPin) {
+  //     await Swal.fire({
+  //       title: t("PINIncorrecto"),
+  //       icon: "error",
+  //       iconColor: "#269181",
+  //       confirmButtonColor: "#35b67e",
+  //       background: "#dee0e0",
+  //       color: "#283655",
+  //     });
+  //     return;
+  //   }
+  //   const { value: newName } = await Swal.fire({
+  //     title: t("ingresaNombreAdmin"),
+  //     input: "text",
+  //     inputPlaceholder: t("tuNombre"),
+  //     background: "#dee0e0",
+  //     color: "#283655",
+  //     confirmButtonColor: "#35b67e",
+  //     confirmButtonText: t("confirmar"),
+  //     cancelButtonText: t("cancelar"),
+  //     showCancelButton: true,
+  //     inputValidator: (value) => {
+  //       if (!value || !value.trim()) {
+  //         return t("ingresarNombreAdmin");
+  //       }
+  //     },
+  //   });
 
-    Swal.fire({
-      title: t("ahoraSosAdmin"),
-      icon: "success",
-      iconColor: "#269181",
-      confirmButtonColor: "#35b67e",
-      background: "#dee0e0",
-      color: "#283655",
-      confirmButtonText: t("cerrar"),
-    });
-  };
+  //   if (!newName) return;
+
+  //   Swal.fire({
+  //     title: t("cambiandoAdmin"),
+  //     allowOutsideClick: false,
+  //     allowEscapeKey: false,
+  //     background: "#dee0e0",
+  //     color: "#283655",
+  //     iconColor: "#269181",
+  //     confirmButtonColor: "#35b67e",
+  //     didOpen: () => {
+  //       Swal.showLoading();
+  //     },
+  //   });
+
+
+  //   await updateDoc(doc(db, "groups", groupId), {
+  //     adminUid: user.uid,
+  //     adminName: newName,
+  //   });
+
+  //   Swal.fire({
+  //     title: t("ahoraSosAdmin"),
+  //     icon: "success",
+  //     iconColor: "#269181",
+  //     confirmButtonColor: "#35b67e",
+  //     background: "#dee0e0",
+  //     color: "#283655",
+  //     confirmButtonText: t("cerrar"),
+  //   });
+  // };
 
   // Ver personas en tiempo real
   useEffect(() => {
@@ -389,6 +406,32 @@ useEffect(() => {
   return unsub;
 }, [groupId]);
 
+
+// Acuerdos de porcentajes de gastos en tiempo real
+useEffect(() => {
+  if (!groupId) {
+    setExpenseAgreements([]);
+    return;
+  }
+
+  const unsub = onSnapshot(
+    collection(db, "groups", groupId, "expenseAgreements"),
+    (snap) => {
+      setExpenseAgreements(
+        snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      );
+    },
+    (error) => {
+      console.error("Error al cargar acuerdos de gastos:", error);
+    }
+  );
+
+  return unsub;
+}, [groupId]);
+
+
+
+
 // Identificar al responsable vinculado con esta cuenta
 useEffect(() => {
   if (!groupId || !user?.uid || !responsablesLoaded) {
@@ -403,6 +446,7 @@ useEffect(() => {
   setResponsableVinculado(responsable || null);
   setIdentificandoResponsable(false);
 }, [groupId, user?.uid, responsables, responsablesLoaded]);
+
 
 // Ver hijos en tiempo real
 useEffect(() => {
@@ -1079,6 +1123,21 @@ if (activePage === "chat" && bothResponsiblesLinked) {
       responsables={responsables}
     />
   );
+
+  } else if (activePage === "expenses" && bothResponsiblesLinked) {
+  pageContent = (
+  <Expenses
+    groupId={groupId}
+    user={user}
+    responsables={responsables}
+    responsableVinculado={responsableVinculado}
+    hijos={hijos}
+    expenses={expenses}
+    payments={payments}
+    acuerdoVigente={acuerdoVigente}
+    expenseAgreements={expenseAgreements}
+  />
+);
 
 } else if (activePage === "agenda" && bothResponsiblesLinked) {
   pageContent = (

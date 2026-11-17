@@ -444,3 +444,10 @@
     flex: 1;
   }
 }
+
+.convivencia-proposal{
+  margin-top: 10px;
+  background-color: #dce2e5;
+  padding-bottom: 5px;
+  border-radius: 10px;
+}
