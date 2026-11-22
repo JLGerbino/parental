@@ -28,15 +28,21 @@ export function calculateBalance(responsables, gastos, pagos = []) {
 
     // Distribuir la responsabilidad según los porcentajes
     // guardados en el propio gasto.
-    (gasto.porcentajes || []).forEach((item) => {
-      const id = item.responsableId;
-      const porcentaje = Number(item.porcentaje) || 0;
+    const distribucion = gasto.distribucion;
+
+if (distribucion) {
+  [distribucion.responsibleA, distribucion.responsibleB]
+    .filter(Boolean)
+    .forEach((item) => {
+      const id = item.id;
+      const porcentaje = Number(item.percentage) || 0;
 
       if (!saldos[id]) return;
 
       const parte = importe * porcentaje / 100;
       saldos[id].balance -= parte;
     });
+}    
   });
 
   // Aplicar solamente pagos confirmados.

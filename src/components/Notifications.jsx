@@ -105,21 +105,7 @@ async function handleViewNotification(notification) {
   }
 }
 
-  // async function markAsRead(notificationId) {
-  //   if (!user?.uid) return;
-
-  //   try {
-  //     await updateDoc(
-  //       doc(db, "groups", groupId, "notifications", notificationId),
-  //       {
-  //         readBy: arrayUnion(user.uid),
-  //       }
-  //     );
-  //   } catch (err) {
-  //     console.error("Error al marcar como leída:", err);
-  //     setError("No se pudo marcar la notificación como leída.");
-  //   }
-  // }
+  
 
   async function deleteNotification(notification) {
   if (!user?.uid) return;
@@ -205,15 +191,7 @@ async function handleViewNotification(notification) {
   Ver
 </button>
 
-                {/* {!isRead && (
-                  <button
-                    type="button"
-                    className="notification-read-button"
-                    onClick={() => markAsRead(notification.id)}
-                  >
-                    Marcar como leída
-                  </button>
-                )} */}
+                
 
                 {(notification.readBy || []).includes(user?.uid) && (
   <button

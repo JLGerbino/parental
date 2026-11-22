@@ -4,6 +4,8 @@ import {
   collection,
   addDoc,
   serverTimestamp,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 
 import { db } from "../firebase";
@@ -51,6 +53,16 @@ const porcentajeValido =
 const propuestaPendiente = expenseAgreements.find(
   (acuerdo) => acuerdo.status === "pending"
 );
+
+const propuestaRecibida =
+  propuestaPendiente &&
+  propuestaPendiente.proposedByUid !== user?.uid
+    ? propuestaPendiente
+    : null;
+
+const propuestaPropia =
+  propuestaPendiente &&
+  propuestaPendiente.proposedByUid === user?.uid;
 
 const gastosOrdenados = [...expenses].sort((a, b) => {
   const fechaA = a.createdAt?.toDate
@@ -120,6 +132,147 @@ const enviarPropuesta = async () => {
   }
 };
 
+const aceptarPropuesta = async () => {
+  if (!propuestaRecibida) return;
+
+  try {
+    const agreementRef = doc(
+      db,
+      "groups",
+      groupId,
+      "expenseAgreements",
+      propuestaRecibida.id
+    );
+
+    await updateDoc(agreementRef, {
+      status: "approved",
+      acceptedByUid: user.uid,
+      acceptedAt: serverTimestamp(),
+      effectiveFrom: serverTimestamp(),
+    });
+
+    alert("Acuerdo de distribución aceptado correctamente.");
+  } catch (error) {
+    console.error("Error al aceptar el acuerdo:", error);
+    alert("No se pudo aceptar el acuerdo.");
+  }
+};
+
+const rechazarPropuesta = async () => {
+  if (!propuestaRecibida) return;
+
+  const confirmar = window.confirm(
+    "¿Estás seguro de que querés rechazar esta propuesta?"
+  );
+
+  if (!confirmar) return;
+
+  try {
+    const agreementRef = doc(
+      db,
+      "groups",
+      groupId,
+      "expenseAgreements",
+      propuestaRecibida.id
+    );
+
+    await updateDoc(agreementRef, {
+      status: "rejected",
+      rejectedByUid: user.uid,
+      rejectedAt: serverTimestamp(),
+    });
+
+    alert("Propuesta rechazada.");
+  } catch (error) {
+    console.error("Error al rechazar la propuesta:", error);
+    alert("No se pudo rechazar la propuesta.");
+  }
+};
+
+const guardarGasto = async () => {
+  if (!descripcion.trim()) {
+    alert("Ingresá una descripción para el gasto.");
+    return;
+  }
+
+  const importeNumerico = Number(importe);
+
+  if (!importe || !Number.isFinite(importeNumerico) || importeNumerico <= 0) {
+    alert("Ingresá un importe válido.");
+    return;
+  }
+
+  if (!responsableVinculado || !user) {
+    alert("No se pudo identificar al responsable.");
+    return;
+  }
+
+  if (tipoGasto === "compartido" && !acuerdoVigente) {
+    alert("Primero deben tener un acuerdo de distribución aprobado.");
+    return;
+  }
+
+  try {
+    const gasto = {
+      descripcion: descripcion.trim(),
+      importe: importeNumerico,
+      tipo: tipoGasto,
+      responsableId: responsableVinculado.id,
+      responsableNombre: responsableVinculado.nombre,
+      creadoPorUid: user.uid,
+      hijos: hijosSeleccionados,
+      createdAt: serverTimestamp(),
+    };
+
+    if (tipoGasto === "compartido") {
+      gasto.distribucion = {
+        responsibleA: {
+          id: acuerdoVigente.responsibleA.id,
+          percentage: acuerdoVigente.responsibleA.percentage,
+        },
+        responsibleB: {
+          id: acuerdoVigente.responsibleB.id,
+          percentage: acuerdoVigente.responsibleB.percentage,
+        },
+      };
+      gasto.acuerdoId = acuerdoVigente.id;
+    }
+
+    await addDoc(
+      collection(db, "groups", groupId, "expenses"),
+      gasto
+    );
+
+    setDescripcion("");
+    setImporte("");
+    setTipoGasto("compartido");
+    setHijosSeleccionados([]);
+    setTodosSeleccionados(false);
+    setMostrarFormularioGasto(false);
+
+    alert("Gasto registrado correctamente.");
+  } catch (error) {
+    console.error("Error al guardar el gasto:", error);
+    alert("No se pudo guardar el gasto.");
+  }
+};
+
+const responsableA = responsables.find(
+  (r) => r.id === propuestaRecibida?.responsibleA.id
+);
+
+const responsableB = responsables.find(
+  (r) => r.id === propuestaRecibida?.responsibleB.id
+);
+
+const responsableAcuerdoA = responsables.find(
+  (r) => r.id === acuerdoVigente?.responsibleA.id
+);
+
+const responsableAcuerdoB = responsables.find(
+  (r) => r.id === acuerdoVigente?.responsibleB.id
+);
+
 
   return (
     <div className="expenses-page">
@@ -128,14 +281,75 @@ const enviarPropuesta = async () => {
       <section className="expense-agreement">
   <h3>Acuerdo de distribución</h3>
 
-  {acuerdoVigente ? (
-    <p>Hay un acuerdo de porcentajes aprobado.</p>
-  ) : (
+  {propuestaRecibida && (
+  <div className="agreement-pending">
+    <h4>Tenés una propuesta pendiente</h4>
+
     <p>
-      Todavía no hay un acuerdo aprobado. Para cargar gastos compartidos,
-      primero deberán acordar cómo distribuirlos.
+      El otro responsable propone esta distribución:
     </p>
-  )}
+
+    <p>
+  {responsableA?.nombre || "Responsable A"}:{" "}
+  <strong>
+    {propuestaRecibida.responsibleA.percentage}%
+  </strong>
+</p>
+
+<p>
+  {responsableB?.nombre || "Responsable B"}:{" "}
+  <strong>
+    {propuestaRecibida.responsibleB.percentage}%
+  </strong>
+</p>
+
+    <p>
+      Revisá los porcentajes antes de aceptar.
+    </p>
+
+    <button
+  type="button"
+  onClick={aceptarPropuesta}
+>
+  Aceptar propuesta
+</button>
+
+<button
+  type="button"
+  onClick={rechazarPropuesta}
+>
+  Rechazar propuesta
+</button>
+
+  </div>
+)}
+
+{propuestaPropia && (
+  <p>
+    Tu propuesta está pendiente de aceptación por el otro responsable.
+  </p>
+)}
+
+  {acuerdoVigente ? (
+  <div className="agreement-approved">
+    <h4>Acuerdo de distribución aprobado</h4>
+
+    <p>
+      {responsableAcuerdoA?.nombre || "Responsable A"}:{" "}
+      <strong>{acuerdoVigente.responsibleA.percentage}%</strong>
+    </p>
+
+    <p>
+      {responsableAcuerdoB?.nombre || "Responsable B"}:{" "}
+      <strong>{acuerdoVigente.responsibleB.percentage}%</strong>
+    </p>
+  </div>
+) : (
+  <p>
+    Todavía no hay un acuerdo aprobado. Para cargar gastos compartidos,
+    primero deberán acordar cómo distribuirlos.
+  </p>
+)}
 
   <button
   type="button"
@@ -284,9 +498,12 @@ const enviarPropuesta = async () => {
       ))
     )}
 
-    <button type="button" disabled>
-      Guardar gasto (próximamente)
-    </button>
+    <button
+  type="button"
+  onClick={guardarGasto}
+>
+  Guardar gasto
+</button>
   </section>
 )}
         <button
@@ -312,12 +529,16 @@ const enviarPropuesta = async () => {
     gastosOrdenados.map((gasto) => (
       <article className="expense-item" key={gasto.id}>
         <div>
-          <strong>{gasto.descripcion || "Gasto sin descripción"}</strong>
+  <strong>{gasto.descripcion || "Gasto sin descripción"}</strong>
 
-          <p>
-            {gasto.tipo === "exclusivo" ? "Exclusivo" : "Compartido"}
-          </p>
-        </div>
+  <p>
+    Pagado por: {gasto.responsableNombre || "Responsable"}
+  </p>
+
+  <p>
+    {gasto.tipo === "exclusivo" ? "Exclusivo" : "Compartido"}
+  </p>
+</div>
 
         <strong>
           ${(Number(gasto.importe) || 0).toLocaleString("es-AR")}
