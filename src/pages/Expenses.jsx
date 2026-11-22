@@ -22,7 +22,11 @@ function Expenses({
   expenseAgreements,
 }) {
 
-  const [mostrarFormularioGasto, setMostrarFormularioGasto] = useState(false);
+const [mostrarFormularioGasto, setMostrarFormularioGasto] = useState(false);
+const [mostrarFormularioPago, setMostrarFormularioPago] = useState(false);
+const [importePago, setImportePago] = useState("");
+const [metodoPago, setMetodoPago] = useState("transfer");
+const [deudaSeleccionada, setDeudaSeleccionada] = useState(null);
 const [descripcion, setDescripcion] = useState("");
 const [importe, setImporte] = useState("");
 const [tipoGasto, setTipoGasto] = useState("compartido");
@@ -32,11 +36,9 @@ const [porcentajePropio, setPorcentajePropio] = useState("50");
 const [mostrarPropuesta, setMostrarPropuesta] = useState(false);
 
 
-    const resultado = calculateBalance(
-  responsables,
-  expenses,
-  payments
-);
+const resultado = calculateBalance(responsables, expenses, payments);
+
+const deudaPropia = resultado.deudas.find((deuda) => deuda.fromResponsibleId === responsableVinculado?.id);
 
 const porcentajeOtro = 100 - Number(porcentajePropio);
 
@@ -189,6 +191,64 @@ const rechazarPropuesta = async () => {
   }
 };
 
+const guardarPago = async () => {
+  const importeNumerico = Number(importePago);
+
+  if (!deudaSeleccionada) {
+    alert("No se encontró una deuda para registrar.");
+    return;
+  }
+
+  if (!importeNumerico || importeNumerico <= 0) {
+    alert("Ingresá un importe válido.");
+    return;
+  }
+
+  if (importeNumerico > deudaSeleccionada.amount) {
+    alert("El importe no puede superar la deuda pendiente.");
+    return;
+  }
+
+  if (!user?.uid || !responsableVinculado?.id) {
+    alert("No se pudo identificar al responsable.");
+    return;
+  }
+
+  try {
+    const pago = {
+      fromResponsibleId: deudaSeleccionada.fromResponsibleId,
+      fromName: deudaSeleccionada.from,
+      toResponsibleId: deudaSeleccionada.toResponsibleId,
+      toName: deudaSeleccionada.to,
+      amount: importeNumerico,
+      method: metodoPago,
+      status: "pending",
+      createdByUid: user.uid,
+      createdAt: serverTimestamp(),
+      confirmedByUid: null,
+      confirmedAt: null,
+      rejectedByUid: null,
+      rejectedAt: null,
+    };
+
+    await addDoc(
+      collection(db, "groups", groupId, "payments"),
+      pago
+    );
+
+    alert("Pago registrado. Queda pendiente de confirmación.");
+
+    setMostrarFormularioPago(false);
+    setDeudaSeleccionada(null);
+    setImportePago("");
+    setMetodoPago("transfer");
+
+  } catch (error) {
+    console.error("Error al registrar el pago:", error);
+    alert("No se pudo registrar el pago.");
+  }
+};
+
 const guardarGasto = async () => {
   if (!descripcion.trim()) {
     alert("Ingresá una descripción para el gasto.");
@@ -256,6 +316,73 @@ const guardarGasto = async () => {
     alert("No se pudo guardar el gasto.");
   }
 };
+
+
+
+const resolverPago = async (pago, decision) => {
+  if (!user?.uid || !responsableVinculado?.id) {
+    alert("No se pudo identificar al responsable.");
+    return;
+  }
+
+  // Solo puede resolverlo quien recibe el pago.
+  if (pago.toResponsibleId !== responsableVinculado.id) {
+    alert("No tenés autorización para resolver este pago.");
+    return;
+  }
+
+  if (pago.status !== "pending") {
+    alert("Este pago ya fue resuelto.");
+    return;
+  }
+
+  const confirmar = window.confirm(
+    decision === "confirmed"
+      ? "¿Confirmás que recibiste este pago?"
+      : "¿Estás seguro de que querés rechazar este pago?"
+  );
+
+  if (!confirmar) return;
+
+  try {
+    const paymentRef = doc(
+      db,
+      "groups",
+      groupId,
+      "payments",
+      pago.id
+    );
+
+    if (decision === "confirmed") {
+      await updateDoc(paymentRef, {
+        status: "confirmed",
+        confirmedByUid: user.uid,
+        confirmedAt: serverTimestamp(),
+        rejectedByUid: null,
+        rejectedAt: null,
+      });
+    } else {
+      await updateDoc(paymentRef, {
+        status: "rejected",
+        rejectedByUid: user.uid,
+        rejectedAt: serverTimestamp(),
+        confirmedByUid: null,
+        confirmedAt: null,
+      });
+    }
+
+    alert(
+      decision === "confirmed"
+        ? "Pago confirmado correctamente."
+        : "Pago rechazado."
+    );
+
+  } catch (error) {
+    console.error("Error al resolver el pago:", error);
+    alert("No se pudo actualizar el pago.");
+  }
+};
+
 
 const responsableA = responsables.find(
   (r) => r.id === propuestaRecibida?.responsibleA.id
@@ -513,9 +640,62 @@ const responsableAcuerdoB = responsables.find(
   {mostrarFormularioGasto ? "Cancelar" : "Cargar gasto"}
 </button>
 
-        <button type="button">
-          Registrar pago
-        </button>
+        <button
+  type="button"
+  disabled={!deudaPropia}
+  onClick={() => {
+    setDeudaSeleccionada(deudaPropia);
+    setImportePago(String(deudaPropia.amount));
+    setMetodoPago("transfer");
+    setMostrarFormularioPago(true);
+  }}>
+  Registrar pago
+</button>
+{mostrarFormularioPago && deudaSeleccionada && (
+  <section className="payment-form">
+    <h4>Registrar pago</h4>
+
+    <p>
+      <strong>{deudaSeleccionada.from}</strong> paga a{" "}
+      <strong>{deudaSeleccionada.to}</strong>
+    </p>
+
+    <label>Importe del pago</label>
+    <input
+      type="number"
+      min="0.01"
+      step="0.01"
+      value={importePago}
+      onChange={(e) => setImportePago(e.target.value)}
+      placeholder="Ingresar importe"
+    />
+
+    <label>Medio de pago</label>
+    <select
+      value={metodoPago}
+      onChange={(e) => setMetodoPago(e.target.value)}
+    >
+      <option value="transfer">Transferencia</option>
+      <option value="cash">Efectivo</option>
+    </select>
+
+    <button type="button"
+     onClick={guardarPago}>
+      Guardar pago
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setMostrarFormularioPago(false);
+        setDeudaSeleccionada(null);
+        setImportePago("");
+      }}
+    >
+      Cancelar
+    </button>
+  </section>
+)}
       </section>
 
      
@@ -575,6 +755,27 @@ const responsableAcuerdoB = responsables.find(
       <strong>
         ${(Number(pago.amount) || 0).toLocaleString("es-AR")}
       </strong>
+
+
+{pago.status === "pending" &&
+  pago.toResponsibleId === responsableVinculado?.id && (
+    <div className="payment-actions">
+      <button
+        type="button"
+        onClick={() => resolverPago(pago, "confirmed")}
+      >
+        Confirmar pago
+      </button>
+
+      <button
+        type="button"
+        onClick={() => resolverPago(pago, "rejected")}
+      >
+        Rechazar pago
+      </button>
+    </div>
+)}
+
     </article>
   ))
 )}
