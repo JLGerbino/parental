@@ -141,31 +141,69 @@ useEffect(() => {
   })[0] || null;
 
 
+  // Traer grupo en tiempo real
+useEffect(() => {
+  if (!groupId || !user?.uid) return;
+console.log("Iniciando listener del grupo:", {
+  groupId,
+  uid: user?.uid,
+});
+  const unsub = onSnapshot(
+    
+    doc(db, "groups", groupId),
+    (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+
+        setGroup({
+          id: snap.id,
+          ...data,
+          status: data.status || "open",
+        });
+
+        setGroupName(data.name || "");
+        setGroupCode(data.code || "");
+      }
+    },
+    (error) => {
+      console.error("Error al escuchar el grupo:", {
+        code: error.code,
+        message: error.message,
+        groupId,
+        uid: user?.uid,
+      });
+    }
+  );
+
+  return () => unsub();
+}, [groupId, user?.uid]);
+
+
 
   // traer grupo en tiempo real
-  useEffect(() => {
-    if (!groupId) return;
+  // useEffect(() => {
+  //   if (!groupId) return;
 
-    const unsub = onSnapshot(
-      doc(db, "groups", groupId),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
+  //   const unsub = onSnapshot(
+  //     doc(db, "groups", groupId),
+  //     (snap) => {
+  //       if (snap.exists()) {
+  //         const data = snap.data();
 
-          setGroup({
-            id: snap.id,
-            ...data,
-            status: data.status || "open",
-          });
+  //         setGroup({
+  //           id: snap.id,
+  //           ...data,
+  //           status: data.status || "open",
+  //         });
 
-          setGroupName(data.name || "");
-          setGroupCode(data.code || "");
-        }
-      }
-    );
+  //         setGroupName(data.name || "");
+  //         setGroupCode(data.code || "");
+  //       }
+  //     }
+  //   );
 
-    return () => unsub();
-  }, [groupId]);
+  //   return () => unsub();
+  // }, [groupId]);
 
 
 
@@ -371,7 +409,7 @@ useEffect(() => {
 
   // Ver personas en tiempo real
   useEffect(() => {
-    if (!groupId) return;
+    if (!groupId || !bothResponsiblesLinked) return;
 
     const unsub = onSnapshot(
       collection(db, "groups", groupId, "people"),
@@ -384,7 +422,7 @@ useEffect(() => {
 
   // Ver responsables en tiempo real
 useEffect(() => {
-  if (!groupId) {
+  if (!groupId || !user?.uid) {
     setResponsables([]);
     setResponsablesLoaded(false);
     return;
@@ -404,12 +442,12 @@ useEffect(() => {
   );
 
   return unsub;
-}, [groupId]);
+}, [groupId, user?.uid]);
 
 
 // Acuerdos de porcentajes de gastos en tiempo real
 useEffect(() => {
-  if (!groupId) {
+  if (!groupId || !bothResponsiblesLinked ) {
     setExpenseAgreements([]);
     return;
   }
@@ -427,7 +465,7 @@ useEffect(() => {
   );
 
   return unsub;
-}, [groupId]);
+}, [groupId, bothResponsiblesLinked]);
 
 
 
@@ -450,7 +488,7 @@ useEffect(() => {
 
 // Ver hijos en tiempo real
 useEffect(() => {
-  if (!groupId) {
+  if (!groupId || !user?.uid || !bothResponsiblesLinked) {
     setHijos([]);
     return;
   }
@@ -471,7 +509,8 @@ useEffect(() => {
   );
 
   return unsub;
-}, [groupId]);
+}, [groupId, user?.uid, bothResponsiblesLinked]);
+
 
 // Agregar responsable
 const addResponsibleToDB = async (responsable) => {
@@ -640,31 +679,44 @@ const handleSelectResponsible = async (event) => {
 
 
   // Ver gastos en tiempo real
-  useEffect(() => {
-    if (!groupId) return;
+useEffect(() => {
+  if (!groupId || !user?.uid || !bothResponsiblesLinked) {
+    setExpenses([]);
+    return;
+  }
 
-    const unsub = onSnapshot(
-      collection(db, "groups", groupId, "expenses"),
-      (snap) => {
-        setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }
-    );
-    return unsub;
-  }, [groupId]);
+  const unsub = onSnapshot(
+    collection(db, "groups", groupId, "expenses"),
+    (snap) => {
+      setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    },
+    (error) => {
+      console.error("Error al cargar gastos:", error);
+    }
+  );
 
-  //ver pago en tiemo real 
-  useEffect(() => {
-    if (!groupId) return;
+  return unsub;
+}, [groupId, user?.uid, bothResponsiblesLinked]);
 
-    const unsub = onSnapshot(
-      collection(db, "groups", groupId, "payments"),
-      (snap) => {
-        setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }
-    );
+  // Ver pagos en tiempo real
+useEffect(() => {
+  if (!groupId || !user?.uid || !bothResponsiblesLinked) {
+    setPayments([]);
+    return;
+  }
 
-    return unsub;
-  }, [groupId]);
+  const unsub = onSnapshot(
+    collection(db, "groups", groupId, "payments"),
+    (snap) => {
+      setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    },
+    (error) => {
+      console.error("Error al cargar pagos:", error);
+    }
+  );
+
+  return unsub;
+}, [groupId, user?.uid, bothResponsiblesLinked]);
 
   // Agregar Persona
   const addPersonToDB = (person) =>
@@ -841,7 +893,7 @@ const handleSelectResponsible = async (event) => {
 
 //escucha los avisos del chat 
 useEffect(() => {
-  if (!groupId || !user?.uid) {
+  if (!groupId || !user?.uid || !bothResponsiblesLinked) {
     setUnreadChat(0);
     return;
   }
@@ -891,11 +943,11 @@ useEffect(() => {
     unsubscribeMessages();
     unsubscribeProfile();
   };
-}, [groupId, user?.uid, activePage]);
+}, [groupId, user?.uid, activePage, bothResponsiblesLinked]);
 
 // Contar notificaciones pendientes en tiempo real
 useEffect(() => {
-  if (!groupId || !user?.uid) {
+  if (!groupId || !user?.uid || !bothResponsiblesLinked) {
     setUnreadNotifications(0);
     return;
   }
@@ -933,12 +985,12 @@ useEffect(() => {
   );
 
   return unsubscribe;
-}, [groupId, user?.uid]);
+}, [groupId, user?.uid, bothResponsiblesLinked]);
 
 
 // Contar eventos de las próximas 24 horas
 useEffect(() => {
-  if (!groupId) {
+  if (!groupId || !bothResponsiblesLinked) {
     setUpcomingAgendaCount(0);
     return;
   }
@@ -982,7 +1034,7 @@ useEffect(() => {
     unsubscribe();
     clearInterval(interval);
   };
-}, [groupId]);
+}, [groupId, bothResponsiblesLinked]);
 
 
 
