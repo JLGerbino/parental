@@ -1,0 +1,135 @@
+
+/* Botón para agregar gasto */
+.btn-add-expense {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #269181;  
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Fondo del modal */
+.expense-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(20, 30, 40, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* Ventana */
+.expense-modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
+}
+
+/* Encabezado */
+.expense-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.expense-modal-header h3 {
+  margin: 0;
+  color: #283655;
+  font-size: 21px;
+}
+
+.expense-modal-close {
+  border: none;
+  background: transparent;
+  color: #596579;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+/* Formulario */
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expense-form > label:not(.expense-checkbox) {
+  color: #283655;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.expense-form > input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #d5dce5;
+  border-radius: 9px;
+  font-size: 15px;
+}
+
+.expense-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #34445b;
+  font-size: 14px;
+}
+
+.expense-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #269181;
+}
+
+.expense-children-title {
+  margin: 10px 0 2px;
+  font-weight: 600;
+  color: #283655;
+}
+
+/* Botones inferiores */
+.expense-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.expense-modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-cancel-expense {
+  background: #e8edf2;
+  color: #34445b;
+}
+
+.btn-save-expense {
+  background: #269181;
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .expense-modal {
+    padding: 18px;
+    max-height: 88vh;
+  }
+}

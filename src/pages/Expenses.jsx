@@ -7,8 +7,8 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-
 import { db } from "../firebase";
+import "./Expenses.css";
 
 function Expenses({
   groupId,
@@ -546,99 +546,136 @@ const responsableAcuerdoB = responsables.find(
       
 
       <section className="expenses-actions">
-        {mostrarFormularioGasto && (
-  <section className="expense-form">
-    <h3>Nuevo gasto</h3>
+        
+<button
+  type="button"
+  className="btn-add-expense"
+  onClick={() => setMostrarFormularioGasto(true)}
+>
+  + Cargar gasto
+</button>
 
-    <label>Descripción</label>
-    <input
-      type="text"
-      value={descripcion}
-      onChange={(e) => setDescripcion(e.target.value)}
-      placeholder="Ej. Cuota escolar"
-    />
+{mostrarFormularioGasto && (
+  <div
+    className="expense-modal-overlay"
+    onClick={() => setMostrarFormularioGasto(false)}
+  >
+    <div
+      className="expense-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="expense-modal-header">
+        <h3>Nuevo gasto</h3>
 
-    <label>Importe</label>
-    <input
-      type="number"
-      min="0"
-      step="0.01"
-      value={importe}
-      onChange={(e) => setImporte(e.target.value)}
-      placeholder="Ingrese el importe"
-    />
+        <button
+          type="button"
+          className="expense-modal-close"
+          onClick={() => setMostrarFormularioGasto(false)}
+        >
+          ×
+        </button>
+      </div>
 
-    <label>Tipo de gasto</label>
-    <label>
-      <input
-        type="checkbox"
-        checked={tipoGasto === "exclusivo"}
-        onChange={(e) =>
-          setTipoGasto(e.target.checked ? "exclusivo" : "compartido")
-        }
-      />
-      Gasto exclusivo (lo asume quien lo carga)
-    </label>
+      <div className="expense-form">
+        <label>Descripción</label>
+        <input
+          type="text"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          placeholder="Ej. Cuota escolar"
+        />
 
-    <p>Hijos relacionados</p>
+        <label>Importe</label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={importe}
+          onChange={(e) => setImporte(e.target.value)}
+          placeholder="Ingresá el importe"
+        />
 
-<label>
-  <input
-    type="checkbox"
-    checked={todosSeleccionados}
-    onChange={(e) => {
-      const seleccionado = e.target.checked;
-      setTodosSeleccionados(seleccionado);
-
-      if (seleccionado) {
-        setHijosSeleccionados(hijos.map((hijo) => hijo.id));
-      } else {
-        setHijosSeleccionados([]);
-      }
-    }}
-  />
-  Todos
-</label>
-
-    {hijos.length === 0 ? (
-      <p>No hay hijos registrados.</p>
-    ) : (
-      hijos.map((hijo) => (
-        <label key={hijo.id}>
+        <label>Tipo de gasto</label>
+        <label className="expense-checkbox">
           <input
             type="checkbox"
-            checked={hijosSeleccionados.includes(hijo.id)}
-            onChange={(e) => {
-  const seleccionados = e.target.checked
-    ? [...hijosSeleccionados, hijo.id]
-    : hijosSeleccionados.filter((id) => id !== hijo.id);
-
-  setHijosSeleccionados(seleccionados);
-
-  setTodosSeleccionados(
-    hijos.length > 0 && seleccionados.length === hijos.length
-  );
-}}
+            checked={tipoGasto === "exclusivo"}
+            onChange={(e) =>
+              setTipoGasto(
+                e.target.checked ? "exclusivo" : "compartido"
+              )
+            }
           />
-          {hijo.nombre}
+          Gasto exclusivo (lo asume quien lo carga)
         </label>
-      ))
-    )}
 
-    <button
-  type="button"
-  onClick={guardarGasto}
->
-  Guardar gasto
-</button>
-  </section>
+        <p className="expense-children-title">Hijos relacionados</p>
+
+        <label className="expense-checkbox">
+          <input
+            type="checkbox"
+            checked={todosSeleccionados}
+            onChange={(e) => {
+              const seleccionado = e.target.checked;
+              setTodosSeleccionados(seleccionado);
+
+              setHijosSeleccionados(
+                seleccionado ? hijos.map((hijo) => hijo.id) : []
+              );
+            }}
+          />
+          Todos
+        </label>
+
+        {hijos.length === 0 ? (
+          <p>No hay hijos registrados.</p>
+        ) : (
+          hijos.map((hijo) => (
+            <label className="expense-checkbox" key={hijo.id}>
+              <input
+                type="checkbox"
+                checked={hijosSeleccionados.includes(hijo.id)}
+                onChange={(e) => {
+                  const seleccionados = e.target.checked
+                    ? [...hijosSeleccionados, hijo.id]
+                    : hijosSeleccionados.filter(
+                        (id) => id !== hijo.id
+                      );
+
+                  setHijosSeleccionados(seleccionados);
+                  setTodosSeleccionados(
+                    hijos.length > 0 &&
+                    seleccionados.length === hijos.length
+                  );
+                }}
+              />
+              {hijo.nombre}
+            </label>
+          ))
+        )}
+
+        <div className="expense-modal-actions">
+          <button
+            type="button"
+            className="btn-cancel-expense"
+            onClick={() => setMostrarFormularioGasto(false)}
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            className="btn-save-expense"
+            onClick={guardarGasto}
+          >
+            Guardar gasto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 )}
-        <button
-  type="button"
-  onClick={() => setMostrarFormularioGasto(!mostrarFormularioGasto)}
->
-  {mostrarFormularioGasto ? "Cancelar" : "Cargar gasto"}
-</button>
+
 
         <button
   type="button"
