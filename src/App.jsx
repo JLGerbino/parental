@@ -8,6 +8,7 @@ import SettingsMenu from "./components/SettingsMenu";
 import BottomBar from "./components/BottomBar.jsx";
 import Convivencia from "./pages/Convivencia.jsx";
 import Expenses from "./pages/Expenses.jsx";
+import Movements from "./pages/Movements.jsx";
 import AddPerson from "./components/addPerson";
 import AddExpense from "./components/addExpense";
 import BalanceList from "./components/balanceList";
@@ -47,6 +48,7 @@ function App() {
 
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [activePage, setActivePage] = useState("home");
+  const [movementsInitialAction, setMovementsInitialAction] = useState(null);
   const [unreadChat, setUnreadChat] = useState(0);
   const [responsables, setResponsables] = useState([]);
   const [expenseAgreements, setExpenseAgreements] = useState([]);
@@ -1188,8 +1190,32 @@ if (activePage === "chat" && bothResponsiblesLinked) {
     payments={payments}
     acuerdoVigente={acuerdoVigente}
     expenseAgreements={expenseAgreements}
+    onOpenMovements={(action) => {
+  setMovementsInitialAction(action || null);
+  setActivePage("movements");
+}}  
   />
 );
+
+} else if (activePage === "movements" && bothResponsiblesLinked) {
+  pageContent = (
+    <Movements
+      groupId={groupId}
+      user={user}
+      responsables={responsables}
+      responsableVinculado={responsableVinculado}
+      hijos={hijos}
+      expenses={expenses}
+      payments={payments}
+      acuerdoVigente={acuerdoVigente}
+      expenseAgreements={expenseAgreements}
+      initialAction={movementsInitialAction}
+      onBack={() => {
+  setMovementsInitialAction(null);
+  setActivePage("expenses");
+}}
+    />
+  );
 
 } else if (activePage === "agenda" && bothResponsiblesLinked) {
   pageContent = (

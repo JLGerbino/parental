@@ -1,0 +1,252 @@
+
+.movements-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 16px 100px;
+  box-sizing: border-box;
+}
+
+.movements-page h2 {
+  margin-bottom: 24px;
+}
+
+.movements-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.movements-actions button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #269181;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.movements-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Historial */
+
+.movements-list {
+  margin-top: 28px;
+}
+
+.movements-list h3 {
+  margin: 22px 0 14px;
+}
+
+.expense-item,
+.payment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #d8dfdf;
+  border-radius: 14px;
+  box-shadow: 0 4px 8px rgba(92, 89, 199, 0.15);
+}
+
+/* Diferenciar visualmente los pagos */
+.payment-item {
+  background: #eef7fc;
+  border-color: #c8e1f0;
+}
+
+.expense-item p,
+.payment-item p {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.payment-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.payment-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 9px;
+  background: #269181;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Modal de gastos */
+
+.btn-add-expense {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #269181;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.expense-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(20, 30, 40, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.expense-modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
+}
+
+.expense-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.expense-modal-header h3 {
+  margin: 0;
+  color: #283655;
+  font-size: 21px;
+}
+
+.expense-modal-close {
+  border: none;
+  background: transparent;
+  color: #596579;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expense-form > label:not(.expense-checkbox) {
+  color: #283655;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.expense-form > input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #d5dce5;
+  border-radius: 9px;
+  font-size: 15px;
+}
+
+.expense-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #34445b;
+  font-size: 14px;
+}
+
+.expense-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #269181;
+}
+
+.expense-children-title {
+  margin: 10px 0 2px;
+  font-weight: 600;
+  color: #283655;
+}
+
+.expense-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.expense-modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-cancel-expense {
+  background: #e8edf2;
+  color: #34445b;
+}
+
+.btn-save-expense {
+  background: #269181;
+  color: white;
+}
+
+/* Formulario de pago */
+
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  margin: 20px 0;
+  border: 1px solid #d8dfdf;
+  border-radius: 14px;
+}
+
+.payment-form input,
+.payment-form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #d5dce5;
+  border-radius: 9px;
+}
+
+.payment-form button {
+  padding: 12px;
+  border: none;
+  border-radius: 9px;
+  background: #269181;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .expense-modal {
+    padding: 18px;
+    max-height: 88vh;
+  }
+}
