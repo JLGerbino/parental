@@ -27,15 +27,7 @@ function Movements({
   const [mostrarFormularioGasto, setMostrarFormularioGasto] = useState(false);
   const [mostrarFormularioPago, setMostrarFormularioPago] = useState(false);
   
-  useEffect(() => {
-  if (initialAction === "expense") {
-    setMostrarFormularioGasto(true);
-    setMostrarFormularioPago(false);
-  } else if (initialAction === "payment") {
-    setMostrarFormularioPago(true);
-    setMostrarFormularioGasto(false);
-  }
-}, [initialAction]);
+  
 
   // Datos del gasto
   const [descripcion, setDescripcion] = useState("");
@@ -55,6 +47,17 @@ function Movements({
   const deudaPropia = resultado.deudas.find(
     (deuda) => deuda.fromResponsibleId === responsableVinculado?.id
   );
+
+  useEffect(() => {
+  if (initialAction === "expense") {
+    setMostrarFormularioGasto(true);
+    setMostrarFormularioPago(false);
+  } else if (initialAction === "payment") {
+    setMostrarFormularioPago(true);
+    setMostrarFormularioGasto(false);
+    setDeudaSeleccionada(deudaPropia || null);
+  }
+}, [initialAction, deudaPropia]);
 
   const movimientosOrdenados = [
   ...expenses.map((gasto) => ({
