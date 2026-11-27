@@ -59,16 +59,6 @@ function Movements({
   }
 }, [initialAction]);
 
-//   useEffect(() => {
-//   if (initialAction === "expense") {
-//     setMostrarFormularioGasto(true);
-//     setMostrarFormularioPago(false);
-//   } else if (initialAction === "payment") {
-//     setMostrarFormularioPago(true);
-//     setMostrarFormularioGasto(false);
-//     setDeudaSeleccionada(deudaPropia || null);
-//   }
-// }, [initialAction, deudaPropia]);
 
   const movimientosOrdenados = [
   ...expenses.map((gasto) => ({
@@ -196,65 +186,6 @@ const guardarPago = async () => {
 
 
 
-// const guardarPago = async () => {
-//   const importeNumerico = Number(importePago);
-
-//   if (!deudaSeleccionada) {
-//     alert("No se encontró una deuda para registrar.");
-//     return;
-//   }
-
-//   if (!importeNumerico || importeNumerico <= 0) {
-//     alert("Ingresá un importe válido.");
-//     return;
-//   }
-
-//   if (importeNumerico > deudaSeleccionada.amount) {
-//     alert("El importe no puede superar la deuda pendiente.");
-//     return;
-//   }
-
-//   if (!user?.uid || !responsableVinculado?.id) {
-//     alert("No se pudo identificar al responsable.");
-//     return;
-//   }
-
-//   try {
-//     const pago = {
-//       fromResponsibleId: deudaSeleccionada.fromResponsibleId,
-//       fromName: deudaSeleccionada.from,
-//       toResponsibleId: deudaSeleccionada.toResponsibleId,
-//       toName: deudaSeleccionada.to,
-//       amount: importeNumerico,
-//       method: metodoPago,
-//       status: "pending",
-//       createdByUid: user.uid,
-//       createdAt: serverTimestamp(),
-//       confirmedByUid: null,
-//       confirmedAt: null,
-//       rejectedByUid: null,
-//       rejectedAt: null,
-//     };
-
-//     await addDoc(
-//       collection(db, "groups", groupId, "payments"),
-//       pago
-//     );
-
-//     alert("Pago registrado. Queda pendiente de confirmación.");
-
-//     setMostrarFormularioPago(false);
-//     setDeudaSeleccionada(null);
-//     setImportePago("");
-//     setMetodoPago("transfer");
-
-//   } catch (error) {
-//     console.error("Error al registrar el pago:", error);
-//     alert("No se pudo registrar el pago.");
-//   }
-// };
-
-
 const guardarGasto = async () => {
   if (!descripcion.trim()) {
     alert("Ingresá una descripción para el gasto.");
@@ -334,65 +265,6 @@ const guardarGasto = async () => {
   }
 };
 
-
-// const guardarGasto = async () => {
-//   if (!descripcion.trim()) {
-//     alert("Ingresá una descripción para el gasto.");
-//     return;
-//   }
-//   const importeNumerico = Number(importe);
-//   if (!importe || !Number.isFinite(importeNumerico) || importeNumerico <= 0) {
-//     alert("Ingresá un importe válido.");
-//     return;
-//   }
-//   if (!responsableVinculado || !user) {
-//     alert("No se pudo identificar al responsable.");
-//     return;
-//   }
-//   if (tipoGasto === "compartido" && !acuerdoVigente) {
-//     alert("Primero deben tener un acuerdo de distribución aprobado.");
-//     return;
-//   }
-//   try {
-//     const gasto = {
-//       descripcion: descripcion.trim(),
-//       importe: importeNumerico,
-//       tipo: tipoGasto,
-//       responsableId: responsableVinculado.id,
-//       responsableNombre: responsableVinculado.nombre,
-//       creadoPorUid: user.uid,
-//       hijos: hijosSeleccionados,
-//       createdAt: serverTimestamp(),
-//     };
-//     if (tipoGasto === "compartido") {
-//       gasto.distribucion = {
-//         responsibleA: {
-//           id: acuerdoVigente.responsibleA.id,
-//           percentage: acuerdoVigente.responsibleA.percentage,
-//         },
-//         responsibleB: {
-//           id: acuerdoVigente.responsibleB.id,
-//           percentage: acuerdoVigente.responsibleB.percentage,
-//         },
-//       };
-//       gasto.acuerdoId = acuerdoVigente.id;
-//     }
-//     await addDoc(
-//       collection(db, "groups", groupId, "expenses"),
-//       gasto
-//     );
-//     setDescripcion("");
-//     setImporte("");
-//     setTipoGasto("compartido");
-//     setHijosSeleccionados([]);
-//     setTodosSeleccionados(false);
-//     setMostrarFormularioGasto(false);
-//     alert("Gasto registrado correctamente.");
-//   } catch (error) {
-//     console.error("Error al guardar el gasto:", error);
-//     alert("No se pudo guardar el gasto.");
-//   }
-// };
 
 
 const resolverPago = async (pago, decision) => {
@@ -477,70 +349,6 @@ const resolverPago = async (pago, decision) => {
     alert("No se pudo actualizar el pago.");
   }
 };
-
-
-// const resolverPago = async (pago, decision) => {
-//   if (!user?.uid || !responsableVinculado?.id) {
-//     alert("No se pudo identificar al responsable.");
-//     return;
-//   }
-
-//   if (pago.toResponsibleId !== responsableVinculado.id) {
-//     alert("No tenés autorización para resolver este pago.");
-//     return;
-//   }
-
-//   if (pago.status !== "pending") {
-//     alert("Este pago ya fue resuelto.");
-//     return;
-//   }
-
-//   const confirmar = window.confirm(
-//     decision === "confirmed"
-//       ? "¿Confirmás que recibiste este pago?"
-//       : "¿Estás seguro de que querés rechazar este pago?"
-//   );
-
-//   if (!confirmar) return;
-
-//   try {
-//     const paymentRef = doc(
-//       db,
-//       "groups",
-//       groupId,
-//       "payments",
-//       pago.id
-//     );
-
-//     if (decision === "confirmed") {
-//       await updateDoc(paymentRef, {
-//         status: "confirmed",
-//         confirmedByUid: user.uid,
-//         confirmedAt: serverTimestamp(),
-//         rejectedByUid: null,
-//         rejectedAt: null,
-//       });
-//     } else {
-//       await updateDoc(paymentRef, {
-//         status: "rejected",
-//         rejectedByUid: user.uid,
-//         rejectedAt: serverTimestamp(),
-//         confirmedByUid: null,
-//         confirmedAt: null,
-//       });
-//     }
-
-//     alert(
-//       decision === "confirmed"
-//         ? "Pago confirmado correctamente."
-//         : "Pago rechazado."
-//     );
-
-//   } catch (error) {
-//     console.error("Error al resolver el pago:", error);
-//     alert("No se pudo actualizar el pago.");
-//   }
-// };
 
   
 return (

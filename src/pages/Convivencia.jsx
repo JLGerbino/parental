@@ -12,6 +12,7 @@ import {
   doc,
   runTransaction,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 
 
@@ -589,6 +590,9 @@ const getDateKeysInRange = (startDate, endDate) => {
     "regimes",
     selectedProposal.id
   );
+  const notificationRef = doc(
+  collection(db, "groups", groupId, "notifications")
+);
 
   try {
     await runTransaction(db, async (transaction) => {
@@ -672,10 +676,32 @@ const dateSnapshots = snapshots.slice(1);
       }
 
       transaction.update(proposalRef, {
-        status: decision,
-        decidedByUid: user.uid,
-        decidedAt: serverTimestamp(),
-      });
+  status: decision,
+  decidedByUid: user.uid,
+  decidedAt: serverTimestamp(),
+});
+
+transaction.set(notificationRef, {
+  type:
+    decision === "approved"
+      ? "convivencia_accepted"
+      : "convivencia_rejected",
+
+  actorUid: user.uid,
+  actorName: responsableVinculado.nombre,
+  recipientUid: proposal.createdByUid,
+
+  message:
+    decision === "approved"
+      ? "aceptó tu propuesta de convivencia."
+      : "rechazó tu propuesta de convivencia.",
+
+  scheduleProposalId: selectedProposal.id,
+
+  readBy: [],
+  deletedBy: [],
+  createdAt: serverTimestamp(),
+});
     });
 
     setSelectedProposal(null);
@@ -736,9 +762,7 @@ const handleWithdrawProposal = async (proposal) => {
   }
 };
   
-
-
-  const closeSchedule = async () => {
+const closeSchedule = async () => {
   if (saving || scheduleClosed) return;
 
   if (!groupId || !user?.uid || !responsableVinculado?.id) {
@@ -759,26 +783,48 @@ const handleWithdrawProposal = async (proposal) => {
   setError("");
 
   try {
-    await addDoc(
-      collection(db, "groups", groupId, "scheduleProposals"),
-      {
-        createdByUid: user.uid,
-        createdByResponsibleId: responsableVinculado.id,
-
-        startDate,
-        endDate,
-
-        childIds: hijos.map((hijo) => hijo.id),
-
-        weeks,
-
-        status: "pending",
-        createdAt: serverTimestamp(),
-
-        decidedByUid: null,
-        decidedAt: null,
-      }
+    const otroResponsable = responsables.find(
+      (responsable) => responsable.id !== responsableVinculado.id
     );
+
+    const batch = writeBatch(db);
+
+    const proposalRef = doc(
+      collection(db, "groups", groupId, "scheduleProposals")
+    );
+
+    batch.set(proposalRef, {
+      createdByUid: user.uid,
+      createdByResponsibleId: responsableVinculado.id,
+      startDate,
+      endDate,
+      childIds: hijos.map((hijo) => hijo.id),
+      weeks,
+      status: "pending",
+      createdAt: serverTimestamp(),
+      decidedByUid: null,
+      decidedAt: null,
+    });
+
+    if (otroResponsable?.linkedUid) {
+      const notificationRef = doc(
+        collection(db, "groups", groupId, "notifications")
+      );
+
+      batch.set(notificationRef, {
+        type: "convivencia_proposed",
+        actorUid: user.uid,
+        actorName: responsableVinculado.nombre,
+        recipientUid: otroResponsable.linkedUid,
+        message: `envió una nueva propuesta de convivencia para el período ${formatDate(startDate)} al ${formatDate(endDate)}.`,
+        scheduleProposalId: proposalRef.id,
+        readBy: [],
+        deletedBy: [],
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
 
     setScheduleClosed(true);
     setError("");
@@ -789,6 +835,58 @@ const handleWithdrawProposal = async (proposal) => {
     setSaving(false);
   }
 };
+
+//   const closeSchedule = async () => {
+//   if (saving || scheduleClosed) return;
+
+//   if (!groupId || !user?.uid || !responsableVinculado?.id) {
+//     setError("No se pudo identificar tu cuenta o tu responsable vinculado.");
+//     return;
+//   }
+
+//   const errors = weeks
+//     .map((week) => validateWeek(week, endDate))
+//     .filter(Boolean);
+
+//   if (errors.length > 0) {
+//     setError(errors.join("\n"));
+//     return;
+//   }
+
+//   setSaving(true);
+//   setError("");
+
+//   try {
+//     await addDoc(
+//       collection(db, "groups", groupId, "scheduleProposals"),
+//       {
+//         createdByUid: user.uid,
+//         createdByResponsibleId: responsableVinculado.id,
+
+//         startDate,
+//         endDate,
+
+//         childIds: hijos.map((hijo) => hijo.id),
+
+//         weeks,
+
+//         status: "pending",
+//         createdAt: serverTimestamp(),
+
+//         decidedByUid: null,
+//         decidedAt: null,
+//       }
+//     );
+
+//     setScheduleClosed(true);
+//     setError("");
+//   } catch (err) {
+//     console.error("Error al enviar la planificación:", err);
+//     setError("No se pudo enviar la planificación. Intentá nuevamente.");
+//   } finally {
+//     setSaving(false);
+//   }
+// };
 
 
   return (

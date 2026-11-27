@@ -1178,12 +1178,42 @@ const handleViewNotification = (notification) => {
       setActivePage("expenses");
       break;
 
+    case "convivencia_proposed":
+    case "convivencia_accepted":
+    case "convivencia_rejected":
+      setActivePage("convivencia");
+      break;
+
     default:
       setSelectedAgendaEventId(notification.eventId || null);
       setActivePage("agenda");
       break;
   }
 };
+
+// const handleViewNotification = (notification) => {
+//   if (!notification) return;
+
+//   switch (notification.type) {
+//     case "expense_created":
+//     case "payment_created":
+//     case "payment_resolved":
+//       setMovementsInitialAction(null);
+//       setActivePage("movements");
+//       break;
+
+//     case "expense_agreement_proposed":
+//     case "expense_agreement_accepted":
+//     case "expense_agreement_rejected":
+//       setActivePage("expenses");
+//       break;
+
+//     default:
+//       setSelectedAgendaEventId(notification.eventId || null);
+//       setActivePage("agenda");
+//       break;
+//   }
+// };
 
 // const handleViewNotification = (notification) => {
 //   if (!notification) return;
