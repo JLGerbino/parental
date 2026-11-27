@@ -57,7 +57,18 @@ function Movements({
     setMostrarFormularioGasto(false);
     setDeudaSeleccionada(deudaPropia || null);
   }
-}, [initialAction, deudaPropia]);
+}, [initialAction]);
+
+//   useEffect(() => {
+//   if (initialAction === "expense") {
+//     setMostrarFormularioGasto(true);
+//     setMostrarFormularioPago(false);
+//   } else if (initialAction === "payment") {
+//     setMostrarFormularioPago(true);
+//     setMostrarFormularioGasto(false);
+//     setDeudaSeleccionada(deudaPropia || null);
+//   }
+// }, [initialAction, deudaPropia]);
 
   const movimientosOrdenados = [
   ...expenses.map((gasto) => ({
