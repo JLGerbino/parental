@@ -75,26 +75,42 @@ function Expenses({
     }
 
     try {
-      await addDoc(
-        collection(db, "groups", groupId, "expenseAgreements"),
-        {
-          responsibleA: {
-            id: responsableVinculado.id,
-            percentage: Number(porcentajePropio),
-          },
-          responsibleB: {
-            id: otroResponsable.id,
-            percentage: porcentajeOtro,
-          },
-          proposedByUid: user.uid,
-          proposedAt: serverTimestamp(),
-          acceptedByUid: null,
-          acceptedAt: null,
-          status: "pending",
-          effectiveFrom: null,
-        }
-      );
+      const agreementRef = await addDoc(
+  collection(db, "groups", groupId, "expenseAgreements"),
+  {
+    responsibleA: {
+      id: responsableVinculado.id,
+      percentage: Number(porcentajePropio),
+    },
+    responsibleB: {
+      id: otroResponsable.id,
+      percentage: porcentajeOtro,
+    },
+    proposedByUid: user.uid,
+    proposedAt: serverTimestamp(),
+    acceptedByUid: null,
+    acceptedAt: null,
+    status: "pending",
+    effectiveFrom: null,
+  }
+);
 
+if (otroResponsable.linkedUid) {
+  await addDoc(
+    collection(db, "groups", groupId, "notifications"),
+    {
+      type: "expense_agreement_proposed",
+      actorUid: user.uid,
+      actorName: responsableVinculado.nombre,
+      recipientUid: otroResponsable.linkedUid,
+      message: "propuso un nuevo acuerdo de distribución de gastos.",
+      agreementId: agreementRef.id,
+      readBy: [],
+      deletedBy: [],
+      createdAt: serverTimestamp(),
+    }
+  );
+}
       setMostrarPropuesta(false);
       alert("Propuesta enviada correctamente.");
     } catch (error) {
@@ -104,61 +120,152 @@ function Expenses({
   };
 
   const aceptarPropuesta = async () => {
-    if (!propuestaRecibida) return;
+  if (!propuestaRecibida) return;
 
-    try {
-      const agreementRef = doc(
-        db,
-        "groups",
-        groupId,
-        "expenseAgreements",
-        propuestaRecibida.id
-      );
-
-      await updateDoc(agreementRef, {
-        status: "approved",
-        acceptedByUid: user.uid,
-        acceptedAt: serverTimestamp(),
-        effectiveFrom: serverTimestamp(),
-      });
-
-      alert("Acuerdo de distribución aceptado correctamente.");
-    } catch (error) {
-      console.error("Error al aceptar el acuerdo:", error);
-      alert("No se pudo aceptar el acuerdo.");
-    }
-  };
-
-  const rechazarPropuesta = async () => {
-    if (!propuestaRecibida) return;
-
-    const confirmar = window.confirm(
-      "¿Estás seguro de que querés rechazar esta propuesta?"
+  try {
+    const agreementRef = doc(
+      db,
+      "groups",
+      groupId,
+      "expenseAgreements",
+      propuestaRecibida.id
     );
 
-    if (!confirmar) return;
+    await updateDoc(agreementRef, {
+      status: "approved",
+      acceptedByUid: user.uid,
+      acceptedAt: serverTimestamp(),
+      effectiveFrom: serverTimestamp(),
+    });
 
-    try {
-      const agreementRef = doc(
-        db,
-        "groups",
-        groupId,
-        "expenseAgreements",
-        propuestaRecibida.id
+    if (propuestaRecibida.proposedByUid) {
+      await addDoc(
+        collection(db, "groups", groupId, "notifications"),
+        {
+          type: "expense_agreement_accepted",
+          actorUid: user.uid,
+          actorName: responsableVinculado.nombre,
+          recipientUid: propuestaRecibida.proposedByUid,
+          message: "aceptó tu propuesta de distribución de gastos.",
+          agreementId: propuestaRecibida.id,
+          readBy: [],
+          deletedBy: [],
+          createdAt: serverTimestamp(),
+        }
       );
-
-      await updateDoc(agreementRef, {
-        status: "rejected",
-        rejectedByUid: user.uid,
-        rejectedAt: serverTimestamp(),
-      });
-
-      alert("Propuesta rechazada.");
-    } catch (error) {
-      console.error("Error al rechazar la propuesta:", error);
-      alert("No se pudo rechazar la propuesta.");
     }
-  };
+
+    alert("Acuerdo de distribución aceptado correctamente.");
+  } catch (error) {
+    console.error("Error al aceptar el acuerdo:", error);
+    alert("No se pudo aceptar el acuerdo.");
+  }
+};
+
+  // const aceptarPropuesta = async () => {
+  //   if (!propuestaRecibida) return;
+
+  //   try {
+  //     const agreementRef = doc(
+  //       db,
+  //       "groups",
+  //       groupId,
+  //       "expenseAgreements",
+  //       propuestaRecibida.id
+  //     );
+
+  //     await updateDoc(agreementRef, {
+  //       status: "approved",
+  //       acceptedByUid: user.uid,
+  //       acceptedAt: serverTimestamp(),
+  //       effectiveFrom: serverTimestamp(),
+  //     });
+
+  //     alert("Acuerdo de distribución aceptado correctamente.");
+  //   } catch (error) {
+  //     console.error("Error al aceptar el acuerdo:", error);
+  //     alert("No se pudo aceptar el acuerdo.");
+  //   }
+  // };
+
+  const rechazarPropuesta = async () => {
+  if (!propuestaRecibida) return;
+
+  const confirmar = window.confirm(
+    "¿Estás seguro de que querés rechazar esta propuesta?"
+  );
+
+  if (!confirmar) return;
+
+  try {
+    const agreementRef = doc(
+      db,
+      "groups",
+      groupId,
+      "expenseAgreements",
+      propuestaRecibida.id
+    );
+
+    await updateDoc(agreementRef, {
+      status: "rejected",
+      rejectedByUid: user.uid,
+      rejectedAt: serverTimestamp(),
+    });
+
+    if (propuestaRecibida.proposedByUid) {
+      await addDoc(
+        collection(db, "groups", groupId, "notifications"),
+        {
+          type: "expense_agreement_rejected",
+          actorUid: user.uid,
+          actorName: responsableVinculado.nombre,
+          recipientUid: propuestaRecibida.proposedByUid,
+          message: "rechazó tu propuesta de distribución de gastos.",
+          agreementId: propuestaRecibida.id,
+          readBy: [],
+          deletedBy: [],
+          createdAt: serverTimestamp(),
+        }
+      );
+    }
+
+    alert("Propuesta rechazada.");
+  } catch (error) {
+    console.error("Error al rechazar la propuesta:", error);
+    alert("No se pudo rechazar la propuesta.");
+  }
+};
+
+  // const rechazarPropuesta = async () => {
+  //   if (!propuestaRecibida) return;
+
+  //   const confirmar = window.confirm(
+  //     "¿Estás seguro de que querés rechazar esta propuesta?"
+  //   );
+
+  //   if (!confirmar) return;
+
+  //   try {
+  //     const agreementRef = doc(
+  //       db,
+  //       "groups",
+  //       groupId,
+  //       "expenseAgreements",
+  //       propuestaRecibida.id
+  //     );
+
+  //     await updateDoc(agreementRef, {
+  //       status: "rejected",
+  //       rejectedByUid: user.uid,
+  //       rejectedAt: serverTimestamp(),
+  //     });
+
+  //     alert("Propuesta rechazada.");
+  //   } catch (error) {
+  //     console.error("Error al rechazar la propuesta:", error);
+  //     alert("No se pudo rechazar la propuesta.");
+  //   }
+  // };
 
   const porcentajeResponsable = (responsableId) => {
     if (!acuerdoVigente) return null;

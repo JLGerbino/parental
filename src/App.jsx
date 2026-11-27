@@ -1161,9 +1161,27 @@ if (!responsableVinculado && responsables.length >= 2) {
   );
 }
 
-const handleViewNotification = (eventId) => {
-  setSelectedAgendaEventId(eventId || null);
-  setActivePage("agenda");
+const handleViewNotification = (notification) => {
+  if (!notification) return;
+
+  switch (notification.type) {
+    case "expense_created":
+    case "payment_created":
+    case "payment_resolved":
+      setActivePage("movements");
+      break;
+
+    case "expense_agreement_proposed":
+    case "expense_agreement_accepted":
+    case "expense_agreement_rejected":
+      setActivePage("expenses");
+      break;
+
+    default:
+      setSelectedAgendaEventId(notification.eventId || null);
+      setActivePage("agenda");
+      break;
+  }
 };
 
 

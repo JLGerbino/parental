@@ -20,6 +20,27 @@ function formatNotificationDate(timestamp) {
   }).format(timestamp.toDate());
 }
 
+function getNotificationTitle(type) {
+  switch (type) {
+    case "created":
+      return "Nuevo evento";
+    case "expense_agreement_proposed":
+      return "Nueva propuesta de gastos";
+    case "expense_agreement_accepted":
+      return "Propuesta de gastos aceptada";
+    case "expense_agreement_rejected":
+      return "Propuesta de gastos rechazada";
+    case "expense_created":
+      return "Nuevo gasto registrado";
+    case "payment_created":
+      return "Nuevo pago pendiente";
+    case "payment_resolved":
+      return "Actualización de pago";
+    default:
+      return "Evento modificado";
+  }
+}
+
 export default function Notifications({ groupId, user, onUnreadCountChange, onViewNotification }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,8 +92,15 @@ export default function Notifications({ groupId, user, onUnreadCountChange, onVi
   const otherNotifications = notifications.filter(
   (n) =>
     n.actorUid !== user?.uid &&
+    (!n.recipientUid || n.recipientUid === user?.uid) &&
     !(n.deletedBy || []).includes(user?.uid)
-);  
+);
+
+//   const otherNotifications = notifications.filter(
+//   (n) =>
+//     n.actorUid !== user?.uid &&
+//     !(n.deletedBy || []).includes(user?.uid)
+// );  
 
   const unreadCount = otherNotifications.filter(
     (notification) => !(notification.readBy || []).includes(user?.uid)
@@ -98,7 +126,8 @@ async function handleViewNotification(notification) {
       );
     }
 
-    onViewNotification?.(notification.eventId);
+    onViewNotification?.(notification);
+    // onViewNotification?.(notification.eventId);
   } catch (err) {
     console.error("Error al abrir la notificación:", err);
     setError("No se pudo abrir la notificación.");
@@ -130,7 +159,7 @@ async function handleViewNotification(notification) {
       <header className="notifications-header">
         <div>
           <h2>Notificaciones</h2>
-          <p>Avisos sobre los cambios en la agenda familiar.</p>
+          <p>Avisos sobre la actividad y los cambios de la organización familiar.</p>
         </div>
 
         <span className="notifications-count">
@@ -163,10 +192,8 @@ async function handleViewNotification(notification) {
               >
                 <div className="notification-item-top">
                   <strong>
-                    {notification.type === "created"
-                      ? "Nuevo evento"
-                      : "Evento modificado"}
-                  </strong>
+  {getNotificationTitle(notification.type)}
+</strong>
 
                   {!isRead && (
                     <span className="notification-new">Nuevo</span>
@@ -176,7 +203,7 @@ async function handleViewNotification(notification) {
                 <p className="notification-message">
                   <strong>{notification.actorName || "Integrante"}</strong>{" "}
                   {notification.message ||
-                    "Realizó un cambio en la agenda."}
+                    "Realizó un cambio en la organización familiar."}
                 </p>
 
                 <small className="notification-date">
