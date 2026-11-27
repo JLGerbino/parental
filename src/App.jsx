@@ -1168,6 +1168,7 @@ const handleViewNotification = (notification) => {
     case "expense_created":
     case "payment_created":
     case "payment_resolved":
+      setMovementsInitialAction(null);
       setActivePage("movements");
       break;
 
@@ -1183,6 +1184,29 @@ const handleViewNotification = (notification) => {
       break;
   }
 };
+
+// const handleViewNotification = (notification) => {
+//   if (!notification) return;
+
+//   switch (notification.type) {
+//     case "expense_created":
+//     case "payment_created":
+//     case "payment_resolved":
+//       setActivePage("movements");
+//       break;
+
+//     case "expense_agreement_proposed":
+//     case "expense_agreement_accepted":
+//     case "expense_agreement_rejected":
+//       setActivePage("expenses");
+//       break;
+
+//     default:
+//       setSelectedAgendaEventId(notification.eventId || null);
+//       setActivePage("agenda");
+//       break;
+//   }
+// };
 
 
 let pageContent;
