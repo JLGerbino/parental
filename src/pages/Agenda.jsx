@@ -455,7 +455,7 @@ const pastEvents = events.filter(
         <p>Un espacio compartido para organizar las actividades.</p>
       </div>
 
-      <span className="agenda-count">
+      <span className="agenda-count">        
         {events.length} {events.length === 1 ? "evento" : "eventos"}
       </span>
     </header>

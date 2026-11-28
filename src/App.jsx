@@ -1299,12 +1299,9 @@ if (activePage === "chat" && bothResponsiblesLinked) {
 } else {
   pageContent = (
     <>
-      <h2 className="app-name">VINCULADOS</h2>
-
+      {/* <h2 className="app-name">VINCULADOS</h2> */}
       <img src="logo.png" alt="Vinculados" className="Create" />
-
-      {/* <p>{t("slogan")}</p> */}
-
+      
       <Home
         groupName={groupName}
         responsables={responsables}
@@ -1315,43 +1312,7 @@ if (activePage === "chat" && bothResponsiblesLinked) {
         onAddChild={addChildToDB}
         onEditChild={editChildInDB}
         onOpenChild={handleOpenChild}
-      />
-
-      {/* Por ahora conservamos las funciones heredadas de gastos */}
-
-      {/* <AddPerson
-        people={people}
-        addPersonToDB={addPersonToDB}
-        deletePerson={deletePersonAndExpenses}
-        editPersonInDB={editPersonInDB}
-        group={group}
-        isAdminMode={isAdminMode}
-        canEdit={canEdit}
-      />
-
-      <AddExpense
-        people={people}
-        expenses={expenses}
-        addExpenseToDB={addExpenseToDB}
-        deleteExpenseFromDB={deleteExpenseFromDB}
-        deleteAllExpenses={deleteAllExpenses}
-        group={group}
-        isAdminMode={isAdminMode}
-        canEdit={canEdit}
-      />
-
-      <BalanceList
-        people={people}
-        expenses={expenses}
-        payments={payments}
-        debts={debts}
-        group={group}
-        onPayDebt={addPayment}
-        groupId={groupId}
-        isAdminMode={isAdminMode}
-        canEdit={canEdit}
-        handleClearPayments={handleClearPayments}
-      /> */}
+      /> 
     </>
   );
 }
@@ -1360,6 +1321,65 @@ return (
   <div className="app">
 
     <div className="top-bar">
+
+  {/* Menú hamburguesa */}
+  <div className="settings-container">
+    <button
+      type="button"
+      className="settings-button"
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleMenu();
+      }}
+    >
+      <i className="fa-solid fa-bars"></i>
+    </button>
+
+    {showMenu && (
+      <SettingsMenu
+        menuRef={menuRef}
+        groupName={groupName}
+        groupCode={groupCode}
+        onExitGroup={exitGroup}
+        onDeleteGroup={handleDeleteGroup}
+      />
+    )}
+  </div>
+
+  {/* Nombre de la aplicación */}
+  <button
+    type="button"
+    className="top-bar-title"
+    onClick={() => setActivePage("home")}
+  >
+    VINCULADOS
+  </button>
+
+  {/* Notificaciones */}
+  <button
+    type="button"
+    className={`top-notifications-button ${
+      !bothResponsiblesLinked ? "disabled" : ""
+    }`}
+    onClick={() => {
+      if (bothResponsiblesLinked) {
+        setActivePage("notifications");
+      }
+    }}
+    disabled={!bothResponsiblesLinked}
+  >
+    <i className="fa-solid fa-bell"></i>
+
+    {unreadNotifications > 0 && (
+      <span className="notification-badge">
+        {unreadNotifications > 99 ? "99+" : unreadNotifications}
+      </span>
+    )}
+  </button>
+
+</div>
+
+    {/* <div className="top-bar">
 
   <div className="settings-container">
     <button
@@ -1405,7 +1425,7 @@ return (
     )}
   </button>
 
-</div>
+</div> */}
     {pageContent}
 
     <BottomBar

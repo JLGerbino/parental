@@ -897,8 +897,9 @@ const closeSchedule = async () => {
     <div className="convivencia-container">
 
       {activeSection === "menu" && (
-  <div className="convivencia-form">
-    <h2>Convivencia</h2>
+        <div>
+          <h2>Convivencia</h2>
+  <div className="convivencia-form">    
     <p>Organizá los tiempos de convivencia de tus hijos.</p>
 
     <button
@@ -939,6 +940,7 @@ const closeSchedule = async () => {
     >
       Regímenes pasados
     </button>
+  </div>
   </div>
 )}
 

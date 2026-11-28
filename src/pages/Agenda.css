@@ -443,3 +443,14 @@
 .pasados{
   color: rgb(167, 60, 60);
 }
+
+/* Ajuste del encabezado de Agenda */
+.agenda-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.agenda-count {
+  align-self: flex-end;
+}

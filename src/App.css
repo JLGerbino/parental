@@ -98,7 +98,7 @@ li,p{
   width: 230px;
 }
 .Create{
-  width:80px;
+  width:60px;
 }
 .tacho{
   text-align: right;
@@ -560,24 +560,23 @@ border-left: 6px solid #269181;
   margin-top: 18px;
 }
 
-/* Barra superior */
+/* Barra superior de navegación */
 .top-bar {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  right: 15px;
+  position: relative;
+  width: 100%;
+  height: 48px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 15px;
   z-index: 1000;
 }
 
 /* Menú hamburguesa */
 .settings-container {
   position: relative;
-  top: auto;
-  left: auto;
-  right: auto;
+  flex: 0 0 42px;
+  z-index: 1001;
 }
 
 .settings-button {
@@ -603,14 +602,38 @@ border-left: 6px solid #269181;
 
 /* Menú desplegable */
 .settings-container .settings-menu {
-  top: 50px;
+  position: absolute;
+  top: 48px;
   left: 0;
   right: auto;
+  width: 260px;
+  z-index: 1002;
 }
 
-/* Campana superior */
+/* Nombre centrado */
+.top-bar-title {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #b61028;
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+}
+
+.top-bar-title:hover {
+  background: transparent;
+  transform: none;
+  color: #b61028;
+}
+
+/* Campana */
 .top-notifications-button {
   position: relative;
+  flex: 0 0 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -640,4 +663,15 @@ border-left: 6px solid #269181;
   opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.top-bar .settings-container {
+  align-self: center;
+  transform: translateY(-15px);
+}
+
+.top-bar .settings-button {
+  margin: 0 !important;
+  position: relative;
+  top: 0;
 }

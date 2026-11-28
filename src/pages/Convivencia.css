@@ -8,10 +8,16 @@
   box-sizing: border-box;
 }
 
+h2 {
+  margin: 0 0 24px;
+  text-align: center;
+  color: red;
+}
+
 .convivencia-container h2 {
   text-align: center;
   color: #283655;
-  margin-bottom: 12px;
+  /*margin-bottom: 12px;*/
 }
 
 .convivencia-description {
@@ -22,10 +28,10 @@
 }
 
 .convivencia-form {
-  background: #fff;
+  background:rgb(223, 223, 220); 
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
 }
 
 .convivencia-form h3 {
