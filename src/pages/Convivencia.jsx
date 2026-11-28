@@ -147,6 +147,7 @@ const Convivencia = ({
   hijos,
   responsables,
   responsableVinculado,
+  initialSection = "menu",
 }) => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -200,8 +201,8 @@ const displayedRegimeWeek =
     (week) => week.id === activeRegimeWeek
   );    
 
-const upcomingRegimes = regimes
-  .filter((regime) => regime.startDate > today)
+const approvedRegimes = regimes
+  .filter((regime) => regime.endDate >= today)
   .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
 const pastRegimes = regimes
@@ -290,6 +291,9 @@ useEffect(() => {
   return () => unsubscribe();
 }, [groupId, user?.uid, responsableVinculado?.id]);
 
+useEffect(() => {
+  setActiveSection(initialSection);
+}, [initialSection]);
 
 
 useEffect(() => {
@@ -1423,10 +1427,10 @@ const closeSchedule = async () => {
       </button>
     </div>
 
-    {upcomingRegimes.length === 0 ? (
+    {approvedRegimes.length === 0 ? (
       <p>No hay regímenes aprobados pendientes de comenzar.</p>
     ) : (
-      upcomingRegimes.map((regime) => (
+      approvedRegimes.map((regime) => (
         <div key={regime.id} className="convivencia-proposal">
           <strong>Régimen aprobado</strong>
 

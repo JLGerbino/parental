@@ -9,6 +9,7 @@ import {
 import { db } from "../firebase";
 import { calculateBalance } from "../utils/calculateBalance";
 import "./Movements.css";
+import Swal from "sweetalert2";
 
 
 function Movements({
@@ -258,7 +259,16 @@ const guardarGasto = async () => {
     setHijosSeleccionados([]);
     setTodosSeleccionados(false);
     setMostrarFormularioGasto(false);
-    alert("Gasto registrado correctamente.");
+    //alert("Gasto registrado correctamente.");
+    return Swal.fire({
+              icon: "warning",
+              title: "se carga el gasto gil",
+              background: "#dee0e0",
+              color: "#283655",
+              iconColor: "#269181",
+              confirmButtonColor: "#35b67e",
+              confirmButtonText: "cerrar"
+            });
   } catch (error) {
     console.error("Error al guardar el gasto:", error);
     alert("No se pudo guardar el gasto.");

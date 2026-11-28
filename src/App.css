@@ -7,6 +7,7 @@ html, body {
 }
 
 .app {
+  position: relative;
   font-family: "Ubuntu Mono", monospace;
   color: grey;
   max-width: 600px;
@@ -97,7 +98,7 @@ li,p{
   width: 230px;
 }
 .Create{
-  width:120px;
+  width:80px;
 }
 .tacho{
   text-align: right;
@@ -557,4 +558,86 @@ border-left: 6px solid #269181;
 
 .agenda-section > .agenda-button {
   margin-top: 18px;
+}
+
+/* Barra superior */
+.top-bar {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Menú hamburguesa */
+.settings-container {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+
+.settings-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #43ADB6;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.settings-button:hover {
+  background: transparent;
+  transform: scale(1.1);
+}
+
+/* Menú desplegable */
+.settings-container .settings-menu {
+  top: 50px;
+  left: 0;
+  right: auto;
+}
+
+/* Campana superior */
+.top-notifications-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #43ADB6;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.top-notifications-button:hover {
+  background: transparent;
+  transform: scale(1.1);
+}
+
+.top-notifications-button .notification-badge {
+  top: 0;
+  right: 0;
+}
+
+.top-notifications-button.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }

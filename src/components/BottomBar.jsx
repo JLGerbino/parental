@@ -33,6 +33,20 @@ const BottomBar = ({
   <small>Gastos</small>
 </div>
 
+
+<div
+  className={`bottom-icon ${
+    !bothResponsiblesLinked ? "disabled" : ""
+  } ${activePage === "convivencia" ? "active" : ""}`}
+  onClick={() => navigate("convivencia")}
+>
+  <i className="fa-solid fa-people-roof"></i>
+  <small>Convivencia</small>
+</div>
+
+
+
+
       <div
   className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""} ${activePage === "agenda" ? "active" : ""}`}
   onClick={() => navigate("agenda")}
@@ -47,17 +61,8 @@ const BottomBar = ({
   )}
 </div>
 
-<div
-  className={`bottom-icon ${
-    !bothResponsiblesLinked ? "disabled" : ""
-  } ${activePage === "convivencia" ? "active" : ""}`}
-  onClick={() => navigate("convivencia")}
->
-  <i className="fa-solid fa-people-roof"></i>
-  <small>Convivencia</small>
-</div>
 
-      <div
+      {/* <div
         className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""} ${activePage === "notifications" ? "active" : ""}`}
         onClick={() => navigate("notifications")}
       >
@@ -69,7 +74,7 @@ const BottomBar = ({
             {unreadNotifications > 99 ? "99+" : unreadNotifications}
           </span>
         )}
-      </div>
+      </div> */}
 
       <div
         className={`bottom-icon ${!bothResponsiblesLinked ? "disabled" : ""} ${activePage === "chat" ? "active" : ""}`}

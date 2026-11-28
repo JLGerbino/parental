@@ -62,6 +62,7 @@ function App() {
   const [selectedChild, setSelectedChild] = useState(null);
   const [selectedAgendaEventId, setSelectedAgendaEventId] = useState(null);
   const [upcomingAgendaCount, setUpcomingAgendaCount] = useState(0);
+  const [convivenciaInitialSection, setConvivenciaInitialSection] = useState("menu");
 
   const [loading, setLoading] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -1179,10 +1180,19 @@ const handleViewNotification = (notification) => {
       break;
 
     case "convivencia_proposed":
-    case "convivencia_accepted":
-    case "convivencia_rejected":
-      setActivePage("convivencia");
-      break;
+  setConvivenciaInitialSection("planificar");
+  setActivePage("convivencia");
+  break;
+
+case "convivencia_accepted":
+  setConvivenciaInitialSection("aprobados");
+  setActivePage("convivencia");
+  break;
+
+case "convivencia_rejected":
+  setConvivenciaInitialSection("planificar");
+  setActivePage("convivencia");
+  break;
 
     default:
       setSelectedAgendaEventId(notification.eventId || null);
@@ -1191,52 +1201,6 @@ const handleViewNotification = (notification) => {
   }
 };
 
-// const handleViewNotification = (notification) => {
-//   if (!notification) return;
-
-//   switch (notification.type) {
-//     case "expense_created":
-//     case "payment_created":
-//     case "payment_resolved":
-//       setMovementsInitialAction(null);
-//       setActivePage("movements");
-//       break;
-
-//     case "expense_agreement_proposed":
-//     case "expense_agreement_accepted":
-//     case "expense_agreement_rejected":
-//       setActivePage("expenses");
-//       break;
-
-//     default:
-//       setSelectedAgendaEventId(notification.eventId || null);
-//       setActivePage("agenda");
-//       break;
-//   }
-// };
-
-// const handleViewNotification = (notification) => {
-//   if (!notification) return;
-
-//   switch (notification.type) {
-//     case "expense_created":
-//     case "payment_created":
-//     case "payment_resolved":
-//       setActivePage("movements");
-//       break;
-
-//     case "expense_agreement_proposed":
-//     case "expense_agreement_accepted":
-//     case "expense_agreement_rejected":
-//       setActivePage("expenses");
-//       break;
-
-//     default:
-//       setSelectedAgendaEventId(notification.eventId || null);
-//       setActivePage("agenda");
-//       break;
-//   }
-// };
 
 
 let pageContent;
@@ -1308,6 +1272,7 @@ if (activePage === "chat" && bothResponsiblesLinked) {
       hijos={hijos}
       responsables={responsables}
       responsableVinculado={responsableVinculado}
+      initialSection={convivenciaInitialSection}
     />
   );
 
@@ -1336,9 +1301,9 @@ if (activePage === "chat" && bothResponsiblesLinked) {
     <>
       <h2 className="app-name">VINCULADOS</h2>
 
-      <img src="logo.png" alt="Cuentas Claras" className="Create" />
+      <img src="logo.png" alt="Vinculados" className="Create" />
 
-      <p>{t("slogan")}</p>
+      {/* <p>{t("slogan")}</p> */}
 
       <Home
         groupName={groupName}
@@ -1394,29 +1359,53 @@ if (activePage === "chat" && bothResponsiblesLinked) {
 return (
   <div className="app">
 
-    <div className="settings-container">
-      <button
-        type="button"
-        className="settings-button"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleMenu();
-        }}
-      >
-        <i className="fa-solid fa-gear"></i>
-      </button>
+    <div className="top-bar">
 
-      {showMenu && (
-        <SettingsMenu
-          menuRef={menuRef}
-          groupName={groupName}
-          groupCode={groupCode}
-          onExitGroup={exitGroup}
-          onDeleteGroup={handleDeleteGroup}
-        />
-      )}
-    </div>
+  <div className="settings-container">
+    <button
+      type="button"
+      className="settings-button"
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleMenu();
+      }}
+    >
+      <i className="fa-solid fa-bars"></i>
+    </button>
 
+    {showMenu && (
+      <SettingsMenu
+        menuRef={menuRef}
+        groupName={groupName}
+        groupCode={groupCode}
+        onExitGroup={exitGroup}
+        onDeleteGroup={handleDeleteGroup}
+      />
+    )}
+  </div>
+
+  <button
+    type="button"
+    className={`top-notifications-button ${
+      !bothResponsiblesLinked ? "disabled" : ""
+    }`}
+    onClick={() => {
+      if (bothResponsiblesLinked) {
+        setActivePage("notifications");
+      }
+    }}
+    disabled={!bothResponsiblesLinked}
+  >
+    <i className="fa-solid fa-bell"></i>
+
+    {unreadNotifications > 0 && (
+      <span className="notification-badge">
+        {unreadNotifications > 99 ? "99+" : unreadNotifications}
+      </span>
+    )}
+  </button>
+
+</div>
     {pageContent}
 
     <BottomBar
